@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="7f660f30-8157-4fc4-b979-2de04f692666" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/Project.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/codeStyles/codeStyleConfig.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/DemoApp.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/annotation/Column.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/annotation/Entity.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/annotation/Id.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/annotation/Table.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/connection_pool/config/DataSourceConfig.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/connection_pool/datasource/DriverDataSource.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/connection_pool/datasource/PooledDataSource.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/connection_pool/exception/PooledDataSourceCreationException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/dao/GenericJdbcDAO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/dao/Properties.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/dao/ResultSetParser.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/entity/Note.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/entity/User.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/exception/DaoOperationException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/exception/ResultSetParseException.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/query/ParameterNameResolver.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/query/SqlQueryBuilder.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/session/EntityKey.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/session/Session.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/session/SessionFactory.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/svydovets/util/ReflectionUtils.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/database_initialization.sql" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CodeStyleSettingsInfer">
+    <option name="done" value="true" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="AnnotationType" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectCodeStyleSettingsMigration">
+    <option name="version" value="2" />
+  </component>
+  <component name="ProjectId" id="2bPGXCMHD2YUxZvN7Ytd9wOgsnA" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "last_opened_file_path": "C:/Users/JJJazl/IdeaProjects/Bibernate/src/main/java/org/svydovets/connection_pool"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\JJJazl\IdeaProjects\Bibernate\src\main\java\org\svydovets\connection_pool" />
+      <recent name="C:\Users\JJJazl\IdeaProjects\Bibernate\src\main\resources" />
+      <recent name="C:\Users\JJJazl\IdeaProjects\Bibernate\src\main\java\org\svydovets" />
+    </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="org.svydovets.connection_pool.exception" />
+    </key>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="7f660f30-8157-4fc4-b979-2de04f692666" name="Changes" comment="" />
+      <created>1706109339179</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1706109339179</updated>
+      <workItem from="1706109340539" duration="2642000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+</project>
