@@ -1,6 +1,6 @@
-package org.svydovets;
+package demo;
 
-import org.svydovets.entity.User;
+import demo.entity.User;
 import org.svydovets.session.Session;
 import org.svydovets.session.SessionFactory;
 
@@ -10,7 +10,7 @@ public class DemoApp {
 
         Session session = sessionFactory.createSession();
 
-        User user = session.findById(User.class, 1);
+        User user = session.findById(User.class, 2);
 
         System.out.println(user);
 
