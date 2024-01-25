@@ -11,19 +11,37 @@ import java.io.IOException;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Factory class for creating sessions for database operations.
+ * This class handles the initialization of the necessary components for database connectivity,
+ * including loading database properties and setting up a data source.
+ */
 public class SessionFactory {
 
     private static final String DB_CONFIG = "src/main/resources/application.properties";
     private final GenericJdbcDAO jdbcDAO;
 
+    /**
+     * Constructs a {@code SessionFactory} with the default database properties.
+     */
     public SessionFactory() {
         this(getDBProperties());
     }
 
+    /**
+     * Constructs a {@code SessionFactory} using the provided database properties.
+     *
+     * @param properties The {@code Properties} object containing the database connection details.
+     */
     public SessionFactory(Properties properties) {
         this.jdbcDAO = new GenericJdbcDAO(createPooledDataSource(properties));
     }
 
+    /**
+     * Creates a new session for database operations.
+     *
+     * @return A new {@code Session} instance for interacting with the database.
+     */
     public Session createSession() {
         return new Session(jdbcDAO);
     }
