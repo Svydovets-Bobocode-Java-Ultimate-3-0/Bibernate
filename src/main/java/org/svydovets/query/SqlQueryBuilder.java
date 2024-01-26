@@ -10,6 +10,7 @@ import java.util.Arrays;
 @Log4j2
 public class SqlQueryBuilder {
     private static final String SELECT_BY_ID_SQL = "select * from %s where %s = ?";
+
     private static final String UPDATE_BY_ID_SQL = "update %s set %s where %s = ?";
 
     public static String buildSelectByIdQuery(Class<?> clazz) {

@@ -1,7 +1,7 @@
 package org.svydovets.session;
 
-import org.svydovets.connection_pool.config.DataSourceConfig;
-import org.svydovets.connection_pool.datasource.PooledDataSource;
+import org.svydovets.connectionPool.config.DataSourceConfig;
+import org.svydovets.connectionPool.datasource.PooledDataSource;
 import org.svydovets.dao.GenericJdbcDAO;
 import org.svydovets.dao.Properties;
 import org.svydovets.exception.InvalidParameterPropertiesException;
