@@ -9,6 +9,13 @@ import java.sql.ResultSet;
 
 public class ResultSetParser {
 
+    public static final String ERROR_PARSING_RESULT_SET_FOR_ENTITY = "Error parsing result set for entity of type: %s";
+
+    /**
+     *
+     * @param entity
+     * @param resultSet
+     */
     public static void parseForEntity(Object entity, ResultSet resultSet) {
         try {
             for (Field field : entity.getClass().getDeclaredFields()) {
@@ -17,11 +24,9 @@ public class ResultSetParser {
                 field.setAccessible(true);
                 field.set(entity, resultSet.getObject(columnName));
             }
-        } catch (Exception e) {
-            throw new ResultSetParseException(String.format(
-                    "Error parsing result set for entity of type: %s", entity.getClass().getName()),
-                    e
-            );
+        } catch (Exception exception) {
+            throw new ResultSetParseException(String
+                    .format(ERROR_PARSING_RESULT_SET_FOR_ENTITY, entity.getClass().getName()), exception);
         }
     }
 }
