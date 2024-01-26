@@ -10,7 +10,7 @@ import org.svydovets.annotation.Table;
 public class Person1 {
 
     @Id
-    private Integer Id;
+    private Integer id;
 
     @Column(name = "first_name")
     private String firstName;
