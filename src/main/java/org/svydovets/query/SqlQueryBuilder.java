@@ -1,13 +1,16 @@
 package org.svydovets.query;
 
 
+import lombok.extern.log4j.Log4j2;
 import org.svydovets.annotation.Id;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
 
+@Log4j2
 public class SqlQueryBuilder {
     private static final String SELECT_BY_ID_SQL = "select * from %s where %s = ?";
+
     private static final String UPDATE_BY_ID_SQL = "update %s set %s where %s = ?";
 
     public static String buildSelectByIdQuery(Class<?> clazz) {
