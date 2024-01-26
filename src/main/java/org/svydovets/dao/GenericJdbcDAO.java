@@ -1,7 +1,6 @@
 package org.svydovets.dao;
 
 import lombok.extern.log4j.Log4j2;
-import org.postgresql.ds.PGSimpleDataSource;
 import org.svydovets.exception.DaoOperationException;
 import org.svydovets.query.SqlQueryBuilder;
 import org.svydovets.session.EntityKey;
@@ -20,8 +19,8 @@ public class GenericJdbcDAO {
 
     private final DataSource dataSource;
 
-    public GenericJdbcDAO(Properties properties) {
-        this.dataSource = initDataSource(properties);
+    public GenericJdbcDAO(DataSource dataSource) {
+        this.dataSource = dataSource;
     }
 
     public <T> T loadFromDB(EntityKey<T> entityKey) {
@@ -59,7 +58,10 @@ public class GenericJdbcDAO {
             EntityKey<?> entityKey = entry.getKey();
 
             String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityKey.clazz());
-            log.info("Update by id: {}", updateQuery);
+
+            if (log.isInfoEnabled()) {
+                log.info("Update by id: {}", updateQuery);
+            }
 
             PreparedStatement updateByIdStatement = connection.prepareStatement(updateQuery);
             Field[] fields = ReflectionUtils.getSortedEntityFieldsWithoutIdField(entityKey.clazz());
@@ -89,7 +91,10 @@ public class GenericJdbcDAO {
     private PreparedStatement prepareSelectStatement(EntityKey<?> entityKey, Connection connection) {
         try {
             String selectQuery = SqlQueryBuilder.buildSelectByIdQuery(entityKey.clazz());
-            log.info("Select by id: {}", selectQuery);
+
+            if (log.isInfoEnabled()) {
+                log.info("Select by id: {}", selectQuery);
+            }
 
             PreparedStatement selectByIdStatement = connection.prepareStatement(selectQuery);
             selectByIdStatement.setObject(1, entityKey.id());
@@ -113,15 +118,6 @@ public class GenericJdbcDAO {
                     e
             );
         }
-    }
-
-    private DataSource initDataSource(Properties properties) {
-        PGSimpleDataSource simpleDataSource = new PGSimpleDataSource();
-        simpleDataSource.setURL(properties.url());
-        simpleDataSource.setUser(properties.user());
-        simpleDataSource.setPassword(properties.password());
-
-        return simpleDataSource;
     }
 
 }

@@ -9,16 +9,33 @@ import java.util.*;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.Executor;
 
+/**
+ * A data source that manages a pool of database connections.
+ * It extends {@code DriverDataSource} to reuse its connection creation logic.
+ * The pool size is configurable, and connections are managed internally in a queue.
+ */
 public class PooledDataSource extends DriverDataSource {
 
     private static final int DEFAULT_POOL_SIZE = 10;
     private final Queue<Connection> connectionPool;
     private final int maxPoolSize;
 
+    /**
+     * Constructs a PooledDataSource with default pool size.
+     *
+     * @param config The {@code DataSourceConfig} containing the database connection details.
+     */
     public PooledDataSource(DataSourceConfig config) {
         this(config, DEFAULT_POOL_SIZE);
     }
 
+    /**
+     * Constructs a PooledDataSource with the specified maximum pool size.
+     *
+     * @param config The {@code DataSourceConfig} containing the database connection details.
+     * @param maxPoolSize The maximum number of connections in the pool.
+     * @throws IllegalArgumentException if {@code maxPoolSize} is less than or equal to 0.
+     */
     public PooledDataSource(DataSourceConfig config, int maxPoolSize) {
         super(config);
         if (maxPoolSize <= 0) {
@@ -30,6 +47,12 @@ public class PooledDataSource extends DriverDataSource {
         initPooledDataSource();
     }
 
+    /**
+     * Initializes the pool of connections.
+     * Creates physical connections and wraps them in {@code ConnectionProxy} instances.
+     *
+     * @throws PooledDataSourceCreationException if unable to create connections.
+     */
     private void initPooledDataSource() {
         for (int i = 0; i < maxPoolSize; i++) {
             try {
@@ -46,6 +69,10 @@ public class PooledDataSource extends DriverDataSource {
         return connectionPool.poll();
     }
 
+    /**
+     * Proxy implementation for a pooled connection.
+     * Manages a physical connection and handles returning to the pool upon closing.
+     */
     static class ConnectionProxy implements Connection {
         private final Connection physicalConnection;
         private final Queue<Connection> connectionPool;
