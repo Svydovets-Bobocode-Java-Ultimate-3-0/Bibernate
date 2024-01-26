@@ -1,13 +1,12 @@
 package org.svydovets.query;
 
-
 import lombok.extern.log4j.Log4j2;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.svydovets.annotation.Column;
+import org.svydovets.annotation.Id;
 import org.svydovets.annotation.Table;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
 
 /**
  * Class helper for resolving names of table and column
@@ -45,6 +44,7 @@ public class ParameterNameResolver {
      * @param field - field entity class annotated or not as @Column
      * @return column name value from annotation or if annotation name is empty - return field name
      * @see Column
+     * @see Id
      */
     public static String resolveColumnName(Field field) {
         log.trace("Call resolveColumnName({}) for field base entity", field);
@@ -57,5 +57,21 @@ public class ParameterNameResolver {
         return columnAnnotation.name().isEmpty()
                 ? field.getName()
                 : columnAnnotation.name();
+    }
+
+    /**
+     * This method helps to define list name of declared <strong>entity field</strong> by name from annotation
+     *
+     * @param clazz - entity class annotated as @Id
+     * @return primary key column name from annotation entity class
+     * @see Id
+     */
+    public static Field getIdField(Class<?> clazz) {
+        log.trace("Call getIdField({}) for  entity class", clazz);
+
+        return Arrays.stream(clazz.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Id.class))
+                .findAny()
+                .orElseThrow();
     }
 }

@@ -15,4 +15,16 @@ public class SqlQueryBuilderTest {
         String selectByIdQuery = "select * from persons where id = ?";
         assertThat(selectByIdQuery).isEqualTo(SqlQueryBuilder.buildSelectByIdQuery(Person1.class));
     }
+
+    @Test
+    public void shouldReturnUpdateByIdQuery() {
+        String updateByIdQuery = "update persons set first_name = ?, last_name = ?, age = ?, male = ? where id = ?";
+        assertThat(updateByIdQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(Person1.class));
+    }
+
+    @Test
+    public void shouldReturnDeleteByIdQuery() {
+        String selectByIdQuery = "delete from persons where id = ?";
+        assertThat(selectByIdQuery).isEqualTo(SqlQueryBuilder.buildDeleteByIdQuery(Person1.class));
+    }
 }
