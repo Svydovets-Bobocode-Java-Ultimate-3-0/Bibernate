@@ -9,11 +9,22 @@ import java.io.PrintWriter;
 import java.sql.*;
 import java.util.logging.Logger;
 
+/**
+ * A {@code DataSource} implementation that delegates to an underlying JDBC {@code Driver}.
+ * This class is used to create connections to a database using the provided {@code DataSourceConfig}.
+ */
 public class DriverDataSource implements DataSource {
 
     private final Driver delegateDriver;
     private final DataSourceConfig config;
 
+    /**
+     * Constructs a {@code DriverDataSource} using the provided {@code DataSourceConfig}.
+     * Attempts to retrieve a {@code Driver} instance using the JDBC URL from the config.
+     *
+     * @param config The {@code DataSourceConfig} to use for obtaining database connection details.
+     * @throws PooledDataSourceCreationException if unable to obtain a {@code Driver} instance.
+     */
     public DriverDataSource(DataSourceConfig config) {
         try {
             this.delegateDriver = DriverManager.getDriver(config.getUrl());
