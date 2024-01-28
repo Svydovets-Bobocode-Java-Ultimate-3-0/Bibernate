@@ -5,13 +5,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.svydovets.annotation.Column;
 import org.svydovets.annotation.Table;
-import org.svydovets.query.baseEntity.Person1;
-import org.svydovets.query.baseEntity.Person2;
-import org.svydovets.query.baseEntity.Person3;
-import org.svydovets.query.baseEntity.Person4;
 import org.svydovets.baseEntity.Person1;
 import org.svydovets.baseEntity.Person2;
 import org.svydovets.baseEntity.Person3;
+import org.svydovets.baseEntity.Person4;
 
 import java.util.Arrays;
 

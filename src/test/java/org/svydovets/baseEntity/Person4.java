@@ -1,4 +1,4 @@
-package org.svydovets.query.baseEntity;
+package org.svydovets.baseEntity;
 
 import org.svydovets.annotation.Column;
 import org.svydovets.annotation.Id;
