@@ -2,6 +2,7 @@ package org.svydovets.query;
 
 import lombok.extern.log4j.Log4j2;
 import org.svydovets.annotation.Column;
+import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
 import org.svydovets.annotation.Table;
 
@@ -73,5 +74,20 @@ public class ParameterNameResolver {
                 .filter(field -> field.isAnnotationPresent(Id.class))
                 .findAny()
                 .orElseThrow();
+    }
+
+    /**
+     * This method helps determine whether a class is marked with an annotation @Entity
+     *
+     * @param clazz - entity class annotated or not as @Entity
+     * @return
+     * @see Entity
+     */
+    public static boolean isEntity(Class<?> clazz) {
+        log.trace("Call isEntity({}) for  entity class", clazz);
+
+        var columnAnnotation = clazz.getAnnotation(Entity.class);
+
+        return columnAnnotation != null;
     }
 }
