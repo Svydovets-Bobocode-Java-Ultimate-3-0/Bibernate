@@ -105,7 +105,7 @@ public class GenericJdbcDAO {
             }
 
             PreparedStatement updateByIdStatement = connection.prepareStatement(updateQuery);
-            Field[] fields = ReflectionUtils.getSortedEntityFieldsWithoutIdField(entityKey.clazz());
+            Field[] fields = ReflectionUtils.getEntityFieldsWithoutIdFieldSortedByName(entityKey.clazz());
             for (int i = 0; i < fields.length; i++) {
                 fields[i].setAccessible(true);
                 updateByIdStatement.setObject(i + 1, fields[i].get(entry.getValue()));

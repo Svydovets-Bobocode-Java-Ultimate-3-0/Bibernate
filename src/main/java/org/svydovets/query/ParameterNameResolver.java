@@ -5,9 +5,9 @@ import org.svydovets.annotation.Column;
 import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
 import org.svydovets.annotation.Table;
+import org.svydovets.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 
 /**
  * Class helper for resolving names of table and column
@@ -67,13 +67,10 @@ public class ParameterNameResolver {
      * @return primary key column name from annotation entity class
      * @see Id
      */
-    public static Field getIdField(Class<?> clazz) {
-        log.trace("Call getIdField({}) for  entity class", clazz);
+    public static String getIdFieldName(Class<?> clazz) {
+        log.trace("Call getIdFieldName({}) for  entity class", clazz);
 
-        return Arrays.stream(clazz.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(Id.class))
-                .findAny()
-                .orElseThrow();
+        return resolveColumnName(ReflectionUtils.getIdField(clazz));
     }
 
     /**

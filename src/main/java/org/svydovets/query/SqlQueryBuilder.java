@@ -27,8 +27,7 @@ public class SqlQueryBuilder {
         log.trace("Call buildSelectByIdQuery({}) for class base entity", clazz);
 
         String tableName = ParameterNameResolver.resolveTableName(clazz);
-        Field idField = ParameterNameResolver.getIdField(clazz);
-        String idColumnName = ParameterNameResolver.resolveColumnName(idField);
+        String idColumnName = ParameterNameResolver.getIdFieldName(clazz);
 
         return String.format(SELECT_BY_ID_SQL, tableName, idColumnName);
     }
@@ -42,8 +41,7 @@ public class SqlQueryBuilder {
         log.trace("Call buildUpdateByIdQuery({}) for  entity class", clazz);
         
         String tableName = ParameterNameResolver.resolveTableName(clazz);
-        Field idField = ParameterNameResolver.getIdField(clazz);
-        String idColumnName = ParameterNameResolver.resolveColumnName(idField);
+        String idColumnName = ParameterNameResolver.getIdFieldName(clazz);
         String columnsForUpdate = resolveColumnsForUpdate(clazz, idColumnName);
 
         return String.format(UPDATE_BY_ID_SQL, tableName, columnsForUpdate, idColumnName);
@@ -56,9 +54,9 @@ public class SqlQueryBuilder {
      */
     public static String buildDeleteByIdQuery(Class<?> clazz) {
         log.trace("Call buildDeleteByIdQuery({}) for  entity class", clazz);
+
         String tableName = ParameterNameResolver.resolveTableName(clazz);
-        Field idField = ParameterNameResolver.getIdField(clazz);
-        String idColumnName = ParameterNameResolver.resolveColumnName(idField);
+        String idColumnName = ParameterNameResolver.getIdFieldName(clazz);
 
         return String.format(DELETE_BY_ID_SQL, tableName, idColumnName);
     }
