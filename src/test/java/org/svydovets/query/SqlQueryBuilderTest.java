@@ -3,7 +3,7 @@ package org.svydovets.query;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.svydovets.query.baseEntity.Person1;
+import org.svydovets.baseEntity.Person1;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
