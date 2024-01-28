@@ -18,6 +18,6 @@ public class Note {
 
     private String body;
 
-    @Column(name = "user_id")
-    private Long userId;
+    @Column(name = "person_id")
+    private Long personId;
 }

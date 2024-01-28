@@ -18,7 +18,7 @@ public class SqlQueryBuilderTest {
 
     @Test
     public void shouldReturnUpdateByIdQuery() {
-        String updateByIdQuery = "update persons set first_name = ?, last_name = ?, age = ?, male = ? where id = ?";
+        String updateByIdQuery = "update persons set age = ?, first_name = ?, last_name = ?, male = ? where id = ?";
         assertThat(updateByIdQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(Person1.class));
     }
 

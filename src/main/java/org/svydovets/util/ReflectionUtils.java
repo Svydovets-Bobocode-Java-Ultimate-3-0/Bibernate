@@ -3,6 +3,7 @@ package org.svydovets.util;
 import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
 import org.svydovets.exception.AnnotationMappingException;
+import org.svydovets.exception.BibernateException;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -16,7 +17,7 @@ public class ReflectionUtils {
                 .toArray(Field[]::new);
     }
 
-    public static Field[] getEntityFieldsWithoutIdFieldSortedByName(Class<?> entityClazz) {
+    public static Field[] getUpdatableFields(Class<?> entityClazz) {
         return Arrays.stream(entityClazz.getDeclaredFields())
                 .filter(field -> !field.isAnnotationPresent(Id.class))
                 .sorted(Comparator.comparing(Field::getName))
@@ -37,5 +38,35 @@ public class ReflectionUtils {
                         "Identifier is not specified for type: %s (Each entity must have field marked as '@Id')",
                         clazz.getName()))
                 );
+    }
+
+    public static Field[] getInsertableFieldsForIdentityGenerationType(Class<?> clazz) {
+        return getUpdatableFields(clazz);
+    }
+
+    public static void setFieldValue(Object entity, Field entityField, Object value) {
+        try {
+            entityField.setAccessible(true);
+            entityField.set(entity, value);
+        } catch (IllegalAccessException e) {
+            throw new BibernateException(String.format(
+                    "Error setting value to field %s of entity %s",
+                    entityField.getName(),
+                    entity.getClass().getName())
+            );
+        }
+    }
+
+    public static Object getFieldValue(Object entity, Field entityField) {
+        try {
+            entityField.setAccessible(true);
+            return entityField.get(entity);
+        } catch (IllegalAccessException e) {
+            throw new BibernateException(String.format(
+                    "Error getting value of field %s of entity %s",
+                    entityField.getName(),
+                    entity.getClass().getName())
+            );
+        }
     }
 }

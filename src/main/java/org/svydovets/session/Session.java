@@ -19,6 +19,18 @@ public class Session {
         this.entitiesSnapshots = new HashMap<>();
     }
 
+    public void persist(Object entity) {
+        Class<?> clazz = entity.getClass();
+
+        Object generatedId = jdbcDAO.saveToDB(entity);
+        Field idField = ReflectionUtils.getIdField(clazz);
+        ReflectionUtils.setFieldValue(entity, idField, generatedId);
+
+        EntityKey<?> entityKey = new EntityKey<>(clazz, generatedId);
+        entitiesCache.put(entityKey, entity);
+        saveEntitySnapshots(entityKey, entity);
+    }
+
     public <T> T findById(Class<T> clazz, Object id) {
         EntityKey<T> entityKey = new EntityKey<>(clazz, id);
         Object entity = entitiesCache.computeIfAbsent(entityKey, jdbcDAO::loadFromDB);
@@ -26,21 +38,20 @@ public class Session {
         return clazz.cast(entity);
     }
 
-    private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
-        Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
-        Object[] snapshots = new Object[fields.length];
-        for (int i = 0; i < fields.length; i++) {
-            snapshots[i] = getFieldValue(entity, fields[i]);
-        }
-        entitiesSnapshots.put(entityKey, snapshots);
-    }
-
-
     public void close() {
         performDirtyCheck();
 
         entitiesCache.clear();
         entitiesSnapshots.clear();
+    }
+
+    private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
+        Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
+        Object[] snapshots = new Object[fields.length];
+        for (int i = 0; i < fields.length; i++) {
+            snapshots[i] = ReflectionUtils.getFieldValue(entity, fields[i]);
+        }
+        entitiesSnapshots.put(entityKey, snapshots);
     }
 
     private void performDirtyCheck() {
@@ -57,19 +68,10 @@ public class Session {
         Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
         Object[] snapshots = entitiesSnapshots.get(entityKey);
         for (int i = 0; i < snapshots.length; i++) {
-            if (!snapshots[i].equals(getFieldValue(entity, fields[i]))) {
+            if (!snapshots[i].equals(ReflectionUtils.getFieldValue(entity, fields[i]))) {
                 return true;
             }
         }
         return false;
-    }
-
-    private Object getFieldValue(Object entity, Field fields) {
-        try {
-            fields.setAccessible(true);
-            return fields.get(entity);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException("Error creating snapshots for entity: " + entity, e);
-        }
     }
 }

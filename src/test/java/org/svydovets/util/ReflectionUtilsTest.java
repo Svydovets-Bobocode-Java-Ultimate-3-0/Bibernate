@@ -68,7 +68,7 @@ public class ReflectionUtilsTest {
                 personClass.getDeclaredField("lastName"),
                 personClass.getDeclaredField("male"),
         };
-        Assertions.assertThat(ReflectionUtils.getEntityFieldsWithoutIdFieldSortedByName(personClass))
+        Assertions.assertThat(ReflectionUtils.getUpdatableFields(personClass))
                 .isEqualTo(expected);
     }
 }
