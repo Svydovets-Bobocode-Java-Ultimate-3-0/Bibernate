@@ -4,6 +4,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.svydovets.annotation.Column;
+import org.svydovets.annotation.Id;
 import org.svydovets.annotation.Table;
 import org.svydovets.query.baseEntity.Person1;
 import org.svydovets.query.baseEntity.Person2;
@@ -61,5 +62,14 @@ public class ParameterNameResolverTest {
                 .findAny().orElseThrow();
 
         assertThat(anyField.getName()).isEqualTo(ParameterNameResolver.resolveColumnName(anyField));
+    }
+
+    @Test
+    public void shouldReturnColumnPrimaryKeyNameWithIdAnnotation() {
+        var idField = Arrays.stream(Person1.class.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Id.class))
+                .findAny().orElseThrow();
+
+        assertThat(idField).isEqualTo(ParameterNameResolver.getIdField(Person1.class));
     }
 }
