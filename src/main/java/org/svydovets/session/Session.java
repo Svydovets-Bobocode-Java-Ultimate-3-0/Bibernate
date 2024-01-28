@@ -27,7 +27,7 @@ public class Session {
     }
 
     private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
-        Field[] fields = ReflectionUtils.getSortedEntityFields(entityKey.clazz());
+        Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
         Object[] snapshots = new Object[fields.length];
         for (int i = 0; i < fields.length; i++) {
             snapshots[i] = getFieldValue(entity, fields[i]);
@@ -54,7 +54,7 @@ public class Session {
         EntityKey<?> entityKey = entry.getKey();
         Object entity = entry.getValue();
 
-        Field[] fields = ReflectionUtils.getSortedEntityFields(entityKey.clazz());
+        Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
         Object[] snapshots = entitiesSnapshots.get(entityKey);
         for (int i = 0; i < snapshots.length; i++) {
             if (!snapshots[i].equals(getFieldValue(entity, fields[i]))) {
