@@ -57,7 +57,15 @@ public class Session {
         Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
         Object[] snapshots = entitiesSnapshots.get(entityKey);
         for (int i = 0; i < snapshots.length; i++) {
-            if (!snapshots[i].equals(getFieldValue(entity, fields[i]))) {
+
+            Object snapshotValue = snapshots[i];
+            Object fieldValue = getFieldValue(entity, fields[i]);
+
+            if (snapshotValue == null && fieldValue == null){
+                return false;
+            }  else if((snapshotValue != null && fieldValue == null) || (snapshotValue == null && fieldValue != null)){
+                return true;
+            } else if (!snapshotValue.equals(fieldValue)) {
                 return true;
             }
         }
