@@ -1,7 +1,5 @@
 package org.svydovets.session;
 
-import lombok.SneakyThrows;
-import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,10 +33,8 @@ class SessionTest {
 
     private AtomicInteger personIdSequence = new AtomicInteger(0);
 
-    @SneakyThrows
     @BeforeEach
     public void initData() {
-
         mockJdbcDAO = Mockito.mock(GenericJdbcDAO.class);
         sessionTestable = new Session(mockJdbcDAO);
     }
@@ -50,8 +46,7 @@ class SessionTest {
     }
 
     @Test
-    void shouldReturnPersonById_positive() {
-
+    void shouldReturnPersonById_positive() throws Exception {
         PersonSessionTest person1 = generateRandomPerson();
         PersonSessionTest person2 = generateRandomPerson();
 
@@ -65,7 +60,7 @@ class SessionTest {
 
 
     @Test
-    void shouldCloseSession() {
+    void shouldCloseSession() throws Exception {
         addPersonToTastableScope(generateRandomPerson());
 
         doNothing().when(mockJdbcDAO).update(any());
@@ -83,8 +78,7 @@ class SessionTest {
     }
 
     @Test
-    void shouldCloseSessionWithNullInEntityField() {
-
+    void shouldCloseSessionWithNullInEntityField() throws Exception {
         PersonSessionTest person = generateRandomPerson();
         person.setLastName(null);
         addPersonToTastableScope(person);
@@ -103,8 +97,7 @@ class SessionTest {
     }
 
     @Test
-    void shouldCloseSessionWithUpdateRecord() {
-
+    void shouldCloseSessionWithUpdateRecord() throws Exception {
         PersonSessionTest person = generateRandomPerson();
         addPersonToTastableScope(person);
 
@@ -129,8 +122,7 @@ class SessionTest {
     }
 
     @Test
-    void shouldCloseSessionWithUpdateIfNullFieldRecord() {
-
+    void shouldCloseSessionWithUpdateIfNullFieldRecord() throws Exception {
         PersonSessionTest person = generateRandomPerson();
         person.setLastName(null);
         addPersonToTastableScope(person);
@@ -159,8 +151,7 @@ class SessionTest {
     }
 
     @Test
-    void shouldCloseSessionWithUpdateIfTwoNullsFieldRecord() {
-
+    void shouldCloseSessionWithUpdateIfTwoNullsFieldRecord() throws Exception {
         PersonSessionTest person = generateRandomPerson();
         person.setLastName(null);
         addPersonToTastableScope(person);
@@ -197,12 +188,9 @@ class SessionTest {
         return person;
     }
 
-    @SneakyThrows
-    private void addPersonToTastableScope(PersonSessionTest person) {
-
+    private void addPersonToTastableScope(PersonSessionTest person) throws IllegalAccessException {
         addPersonToEntityExpected(person);
         addEntityToSnapshots(getEntityKeyByPerson(person), person);
-
     }
 
     private void addPersonToEntityExpected(PersonSessionTest person) throws IllegalAccessException {
@@ -215,13 +203,11 @@ class SessionTest {
         entitiesCacheField.set(sessionTestable, entitiesCacheExpected);
     }
 
-    @NotNull
     private static EntityKey<PersonSessionTest> getEntityKeyByPerson(PersonSessionTest person) {
         return new EntityKey<>(PersonSessionTest.class, person.getId());
     }
 
-    @SneakyThrows
-    private void addEntityToSnapshots(EntityKey<?> entityKey, Object entity) {
+    private void addEntityToSnapshots(EntityKey<?> entityKey, Object entity) throws IllegalAccessException {
         Field[] fields = org.svydovets.util.ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
         Object[] snapshots = new Object[fields.length];
         for (int i = 0; i < fields.length; i++) {
@@ -237,9 +223,9 @@ class SessionTest {
         entitiesSnapshotsField.set(sessionTestable, entitiesSnapshotsExpected);
     }
 
-    @SneakyThrows
-    private Object getFieldValue(Object entity, Field fields) {
+    private Object getFieldValue(Object entity, Field fields) throws IllegalAccessException {
         fields.setAccessible(true);
         return fields.get(entity);
     }
+
 }
