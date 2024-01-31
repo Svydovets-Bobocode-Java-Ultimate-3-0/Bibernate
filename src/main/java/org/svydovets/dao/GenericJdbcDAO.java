@@ -11,6 +11,9 @@ import java.lang.reflect.Field;
 import java.sql.*;
 import java.util.Map;
 
+/**
+ *
+ */
 @Log4j2
 public class GenericJdbcDAO {
 
@@ -23,10 +26,10 @@ public class GenericJdbcDAO {
     public Object saveToDB(Object entity) {
         try (Connection connection = dataSource.getConnection()) {
             return save(entity, connection);
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
                     "Error saving entity to the DB: %s", entity.getClass().getName()),
-                    e
+                    exception
             );
         }
     }
@@ -54,10 +57,10 @@ public class GenericJdbcDAO {
                 insertStatement.setObject(i + 1, ReflectionUtils.getFieldValue(entity, entityFields[i]));
             }
             return insertStatement;
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
                     "Error preparing insert statement for entity: %s", entity.getClass().getName()),
-                    e
+                    exception
             );
         }
     }
@@ -65,22 +68,57 @@ public class GenericJdbcDAO {
     public <T> T loadFromDB(EntityKey<T> entityKey) {
         try (Connection connection = dataSource.getConnection()) {
             return load(entityKey, connection);
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
                     "Error loading entity from the DB: %s", entityKey.clazz().getName()),
-                    e
+                    exception
             );
         }
     }
 
+    /**
+     * This method update entity by id
+     *
+     * @param keyEntityEntry
+     */
     public void update(Map.Entry<EntityKey<?>, Object> keyEntityEntry) {
         try (Connection connection = dataSource.getConnection()) {
             performUpdate(connection, keyEntityEntry.getKey(), keyEntityEntry.getValue());
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(
                     String.format("Error updating entity: %s", keyEntityEntry.getKey()),
-                    e
+                    exception
             );
+        }
+    }
+
+    /**
+     * This method remove entity by id
+     *
+     * @param entityKey
+     * @param <T>
+     */
+    public <T> void remove(EntityKey<T> entityKey) {
+        Class<T> entityClass = entityKey.clazz();
+
+        log.trace("Call remove({}) for entity class", entityClass);
+
+        try (Connection connection = dataSource.getConnection()) {
+            String deleteQuery = SqlQueryBuilder.buildDeleteByIdQuery(entityClass);
+            if (log.isInfoEnabled()) {
+                log.info("Remove by id: {}", deleteQuery);
+            }
+
+            PreparedStatement deleteByIdStatement = connection.prepareStatement(deleteQuery);
+            deleteByIdStatement.setObject(1, entityKey.id());
+            var deleteRowsCount = deleteByIdStatement.executeUpdate();
+            if (deleteRowsCount == 0) {
+                throw new DaoOperationException(String
+                        .format("Delete has not been perform for entity: %s", entityClass));
+            }
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String
+                    .format("Error delete entity: %s", entityClass), exception);
         }
     }
 
@@ -88,7 +126,7 @@ public class GenericJdbcDAO {
         PreparedStatement updateByIdStatement = prepareUpdateStatement(connection, entityKey, entity);
         var updatedRowsCount = updateByIdStatement.executeUpdate();
         if (updatedRowsCount == 0) {
-            throw new DaoOperationException(String.format("Update has not been perform for entity: %s", entityKey));
+            throw new DaoOperationException(String.format("Update has not been perform for entity: %s", entityKey.clazz().getName()));
         }
     }
 
@@ -105,13 +143,13 @@ public class GenericJdbcDAO {
                 entityFields[i].setAccessible(true);
                 updateByIdStatement.setObject(i + 1, entityFields[i].get(entity));
             }
+
             updateByIdStatement.setObject(entityFields.length + 1, entityKey.id());
+
             return updateByIdStatement;
-        } catch (Exception e) {
-            throw new DaoOperationException(
-                    String.format("Error preparing update statement for entity: %s", entityKey.clazz()),
-                    e
-            );
+        } catch (Exception exception) {
+            throw new DaoOperationException(String
+                    .format("Error preparing update statement for entity: %s", entityKey.clazz().getName()), exception);
         }
     }
 
@@ -121,6 +159,7 @@ public class GenericJdbcDAO {
         if (resultSet.next()) {
             return createEntityFromResultSet(entityKey, resultSet);
         }
+
         return null;
     }
 
@@ -134,11 +173,12 @@ public class GenericJdbcDAO {
 
             PreparedStatement selectByIdStatement = connection.prepareStatement(selectQuery);
             selectByIdStatement.setObject(1, entityKey.id());
+
             return selectByIdStatement;
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
                     "Error preparing select statement for entity: %s", entityKey.clazz().getName()),
-                    e
+                    exception
             );
         }
     }
@@ -147,11 +187,12 @@ public class GenericJdbcDAO {
         try {
             T entity = entityKey.clazz().getConstructor().newInstance();
             ResultSetParser.parseForEntity(entity, resultSet);
+
             return entity;
-        } catch (Exception e) {
+        } catch (Exception exception) {
             throw new DaoOperationException(String.format(
                     "Error creating entity from result set: %s", entityKey.clazz().getName()),
-                    e
+                    exception
             );
         }
     }

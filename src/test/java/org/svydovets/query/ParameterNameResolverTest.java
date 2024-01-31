@@ -8,10 +8,13 @@ import org.svydovets.annotation.Table;
 import org.svydovets.baseEntity.Person1;
 import org.svydovets.baseEntity.Person2;
 import org.svydovets.baseEntity.Person3;
+import org.svydovets.baseEntity.Person4;
 
 import java.util.Arrays;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class ParameterNameResolverTest {
@@ -61,5 +64,11 @@ public class ParameterNameResolverTest {
                 .findAny().orElseThrow();
 
         assertThat(anyField.getName()).isEqualTo(ParameterNameResolver.resolveColumnName(anyField));
+    }
+
+    @Test
+    public void returnsPresenceOfEntityAnnotationForClass() {
+        assertTrue(ParameterNameResolver.isEntity(Person1.class));
+        assertFalse(ParameterNameResolver.isEntity(Person4.class));
     }
 }

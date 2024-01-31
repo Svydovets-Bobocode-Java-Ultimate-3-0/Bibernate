@@ -32,6 +32,13 @@ public class Session {
         saveEntitySnapshots(entityKey, entity);
     }
 
+    /**
+     * This method load entity form DB by entity type and primary key
+     *
+     * @param clazz
+     * @param id - entity id
+     * @param <T> - type of entity
+     */
     public <T> T findById(Class<T> clazz, Object id) {
         EntityKey<T> entityKey = new EntityKey<>(clazz, id);
         Object entity = entitiesCache.computeIfAbsent(entityKey, jdbcDAO::loadFromDB);
@@ -58,18 +65,13 @@ public class Session {
         return null;
     }
 
-    private Object mergeEntity(Object entity) {
-        Class<?> entityType = entity.getClass();
-        Object mergedEntity = ReflectionUtils.newInstanceOf(entityType);
-
-        for (Field entityField : entityType.getDeclaredFields()) {
-            Object fieldValue = ReflectionUtils.getFieldValue(entity, entityField);
-            ReflectionUtils.setFieldValue(mergedEntity, entityField, fieldValue);
-        }
-
-        return mergedEntity;
-    }
-
+    /**
+     * This method close current session. Before closing the session, the following is performed:
+     *  - “dirty check”,
+     *  - clearing the first level cache
+     *  - clearing all snapshots.
+     *
+     */
     public void close() {
         performDirtyCheck();
 
@@ -105,5 +107,17 @@ public class Session {
             }
         }
         return false;
+    }
+
+    private Object mergeEntity(Object entity) {
+        Class<?> entityType = entity.getClass();
+        Object mergedEntity = ReflectionUtils.newInstanceOf(entityType);
+
+        for (Field entityField : entityType.getDeclaredFields()) {
+            Object fieldValue = ReflectionUtils.getFieldValue(entity, entityField);
+            ReflectionUtils.setFieldValue(mergedEntity, entityField, fieldValue);
+        }
+
+        return mergedEntity;
     }
 }
