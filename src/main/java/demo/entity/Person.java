@@ -8,8 +8,8 @@ import org.svydovets.annotation.Table;
 
 @Entity
 @Data
-@Table(name = "users")
-public class User {
+@Table(name = "persons")
+public class Person {
 
     @Id
     private Long id;
@@ -20,5 +20,5 @@ public class User {
     @Column(name = "last_name")
     private String lastName;
 
-    private int age;
+//    private int age;
 }
