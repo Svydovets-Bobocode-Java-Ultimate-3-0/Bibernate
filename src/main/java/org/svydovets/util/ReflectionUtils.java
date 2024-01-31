@@ -5,6 +5,7 @@ import org.svydovets.annotation.Id;
 import org.svydovets.exception.AnnotationMappingException;
 import org.svydovets.exception.BibernateException;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -66,6 +67,23 @@ public class ReflectionUtils {
                     "Error getting value of field %s of entity %s",
                     entityField.getName(),
                     entity.getClass().getName())
+            );
+        }
+    }
+
+    public static <T> Object getEntityIdValue(T entity) {
+        return getFieldValue(entity, getIdField(entity.getClass()));
+    }
+
+    public static Object newInstanceOf(Class<?> entityType) {
+        try {
+            Constructor<?> constructor = entityType.getConstructor();
+            return constructor.newInstance();
+        } catch (Exception e) {
+            throw new BibernateException(String.format(
+                    "Error creating instance of type %s. Each entity must have a default no-args constructor",
+                    entityType.getName()),
+                    e
             );
         }
     }

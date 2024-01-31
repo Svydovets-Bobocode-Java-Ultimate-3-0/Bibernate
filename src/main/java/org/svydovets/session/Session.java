@@ -6,6 +6,7 @@ import org.svydovets.util.ReflectionUtils;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class Session {
 
@@ -38,6 +39,37 @@ public class Session {
         return clazz.cast(entity);
     }
 
+    public <T> T merge(T entity) {
+        EntityKey<T> entityKey = EntityKey.of(entity);
+        if (entitiesCache.containsKey(entityKey)) {
+            return entityKey.clazz().cast(entitiesCache.get(entityKey));
+        }
+
+        Object loadedEntity = jdbcDAO.loadFromDB(entityKey);
+        if (loadedEntity != null) {
+            saveEntitySnapshots(entityKey, loadedEntity);
+
+            Object mergedEntity = mergeEntity(entity);
+            entitiesCache.put(entityKey, mergedEntity);
+
+            return entityKey.clazz().cast(mergedEntity);
+        }
+
+        return null;
+    }
+
+    private Object mergeEntity(Object entity) {
+        Class<?> entityType = entity.getClass();
+        Object mergedEntity = ReflectionUtils.newInstanceOf(entityType);
+
+        for (Field entityField : entityType.getDeclaredFields()) {
+            Object fieldValue = ReflectionUtils.getFieldValue(entity, entityField);
+            ReflectionUtils.setFieldValue(mergedEntity, entityField, fieldValue);
+        }
+
+        return mergedEntity;
+    }
+
     public void close() {
         performDirtyCheck();
 
@@ -68,7 +100,7 @@ public class Session {
         Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
         Object[] snapshots = entitiesSnapshots.get(entityKey);
         for (int i = 0; i < snapshots.length; i++) {
-            if (!snapshots[i].equals(ReflectionUtils.getFieldValue(entity, fields[i]))) {
+            if (!Objects.equals(snapshots[i], ReflectionUtils.getFieldValue(entity, fields[i]))) {
                 return true;
             }
         }

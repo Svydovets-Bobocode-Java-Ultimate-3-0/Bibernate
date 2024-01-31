@@ -1,6 +1,6 @@
 package demo;
 
-import demo.entity.User;
+import demo.entity.Person;
 import org.svydovets.session.Session;
 import org.svydovets.session.SessionFactory;
 
