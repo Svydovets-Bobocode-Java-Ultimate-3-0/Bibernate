@@ -6,6 +6,7 @@ import org.svydovets.util.ReflectionUtils;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class Session {
 
@@ -31,18 +32,18 @@ public class Session {
         saveEntitySnapshots(entityKey, entity);
     }
 
+    /**
+     * This method load entity form DB by entity type and primary key
+     *
+     * @param clazz
+     * @param id - entity id
+     * @param <T> - type of entity
+     */
     public <T> T findById(Class<T> clazz, Object id) {
         EntityKey<T> entityKey = new EntityKey<>(clazz, id);
         Object entity = entitiesCache.computeIfAbsent(entityKey, jdbcDAO::loadFromDB);
         saveEntitySnapshots(entityKey, entity);
         return clazz.cast(entity);
-    }
-
-    public void close() {
-        performDirtyCheck();
-
-        entitiesCache.clear();
-        entitiesSnapshots.clear();
     }
 
     private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
@@ -52,6 +53,20 @@ public class Session {
             snapshots[i] = ReflectionUtils.getFieldValue(entity, fields[i]);
         }
         entitiesSnapshots.put(entityKey, snapshots);
+    }
+
+    /**
+     * This method close current session. Before closing the session, the following is performed:
+     *  - “dirty check”,
+     *  - clearing the first level cache
+     *  - clearing all snapshots.
+     *
+     */
+    public void close() {
+        performDirtyCheck();
+
+        entitiesCache.clear();
+        entitiesSnapshots.clear();
     }
 
     private void performDirtyCheck() {
@@ -68,7 +83,7 @@ public class Session {
         Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
         Object[] snapshots = entitiesSnapshots.get(entityKey);
         for (int i = 0; i < snapshots.length; i++) {
-            if (!snapshots[i].equals(ReflectionUtils.getFieldValue(entity, fields[i]))) {
+            if (!Objects.equals(snapshots[i], ReflectionUtils.getFieldValue(entity, fields[i]))) {
                 return true;
             }
         }
