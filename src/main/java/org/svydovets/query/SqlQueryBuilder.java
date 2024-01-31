@@ -13,15 +13,18 @@ import org.svydovets.util.SqlQueryUtil;
 public class SqlQueryBuilder {
     private static final String SELECT_BY_ID_SQL = "select * from %s where %s = ?";
 
-    private static final String INSERT_SQL = "insert into %s (%s) values(%s)";
+    private static final String INSERT_SQL = "insert into %s (%s) values (%s)";
 
     private static final String UPDATE_BY_ID_SQL = "update %s set %s where %s = ?";
 
     private static final String DELETE_BY_ID_SQL = "delete from %s where %s = ?";
 
-    public static String buildInsertQuery(Object entity) {
-        Class<?> entityType = entity.getClass();
-
+    /**
+     * This method helps to build a INSERT QUERY based on the primary key.
+     *
+     * @param entityType - entity type
+     */
+    public static String buildInsertQuery(Class<?> entityType) {
         String tableName = ParameterNameResolver.resolveTableName(entityType);
         String columnNames = SqlQueryUtil.resolveColumnNamesForInsert(entityType);
         String columnValues = SqlQueryUtil.resolveColumnValuesForInsert(entityType);
@@ -40,7 +43,20 @@ public class SqlQueryBuilder {
         String tableName = ParameterNameResolver.resolveTableName(entityType);
         String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
 
-        return String.format(SELECT_BY_ID_SQL, tableName, idColumnName);
+        return buildSelectByColumnQuery(tableName, idColumnName);
+    }
+
+    /**
+     * This method helps to build a SELECT QUERY based on the column name.
+     *
+     * @param tableName - entity table name
+     * @param columnName - entity column name
+     * @return prepared select query
+     */
+    public static String buildSelectByColumnQuery(final String tableName, final String columnName) {
+        log.trace("Call buildSelectByColumnQuery({}, {}) for class base entity", tableName, columnName);
+
+        return String.format(SELECT_BY_ID_SQL, tableName, columnName);
     }
 
     /**

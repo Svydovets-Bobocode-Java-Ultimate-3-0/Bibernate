@@ -2,11 +2,17 @@ package org.svydovets.util;
 
 import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
+import org.svydovets.annotation.JoinColumn;
+import org.svydovets.annotation.ManyToOne;
+import org.svydovets.annotation.OneToMany;
+import org.svydovets.annotation.OneToOne;
 import org.svydovets.exception.AnnotationMappingException;
 import org.svydovets.exception.BibernateException;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -86,5 +92,36 @@ public class EntityReflectionUtils {
                     e
             );
         }
+    }
+
+    public static boolean isEntityField(final Field field) {
+        boolean isEntityAnnotation = field.isAnnotationPresent(ManyToOne.class)
+                || field.isAnnotationPresent(OneToOne.class);
+        if (!field.isAnnotationPresent(JoinColumn.class)) {
+            throw new AnnotationMappingException(String.format("The entity field [%s] that is marked with the @OneToOne "
+                    + "or @ManyToOne annotation is missing the required @JoinColumn annotation", field.getName()));
+        }
+
+        return isEntityAnnotation;
+    }
+
+    public static boolean isEntityCollectionField(final Field field) {
+        return field.isAnnotationPresent(OneToMany.class);
+    }
+
+    public static Class<?> getJoinCollectionEntityType(Field field) {
+        ParameterizedType parameterizedType = (ParameterizedType) field.getGenericType();
+        Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+        Type actualTypeArgument = actualTypeArguments[0];
+
+        return (Class<?>) actualTypeArgument;
+    }
+
+    public static <T> Field getJoinClazzField(Class<T> clazz, Class<?> joinClazz) {
+        return Arrays.stream(joinClazz.getDeclaredFields())
+                .filter(field -> field.getType().equals(clazz))
+                .findAny()
+                .orElseThrow(() -> new AnnotationMappingException(String
+                        .format("Cannon find related field [%s] in $s", joinClazz, clazz)));
     }
 }

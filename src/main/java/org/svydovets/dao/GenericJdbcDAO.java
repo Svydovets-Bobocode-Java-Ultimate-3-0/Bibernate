@@ -1,7 +1,10 @@
 package org.svydovets.dao;
 
 import lombok.extern.log4j.Log4j2;
+import org.svydovets.collection.LazyList;
 import org.svydovets.exception.DaoOperationException;
+import org.svydovets.exception.ResultSetParseException;
+import org.svydovets.query.ParameterNameResolver;
 import org.svydovets.query.SqlQueryBuilder;
 import org.svydovets.session.EntityKey;
 import org.svydovets.util.EntityReflectionUtils;
@@ -13,7 +16,15 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
+
+import static org.svydovets.util.EntityReflectionUtils.getJoinClazzField;
+import static org.svydovets.util.EntityReflectionUtils.getJoinCollectionEntityType;
+import static org.svydovets.util.EntityReflectionUtils.isEntityCollectionField;
+import static org.svydovets.util.EntityReflectionUtils.isEntityField;
 
 /**
  *
@@ -50,7 +61,7 @@ public class GenericJdbcDAO {
     }
 
     private PreparedStatement prepareInsertStatement(Object entity, Connection connection) {
-        String insertQuery = SqlQueryBuilder.buildInsertQuery(entity);
+        String insertQuery = SqlQueryBuilder.buildInsertQuery(entity.getClass());
         if (log.isInfoEnabled()) {
             log.info(String.format("Insert: %s", insertQuery));
         }
@@ -161,7 +172,7 @@ public class GenericJdbcDAO {
         PreparedStatement selectByIdStatement = prepareSelectStatement(entityKey, connection);
         ResultSet resultSet = selectByIdStatement.executeQuery();
         if (resultSet.next()) {
-            return createEntityFromResultSet(entityKey, resultSet);
+            return createEntityFromResultSet(entityKey.entityType(), resultSet);
         }
 
         return null;
@@ -187,18 +198,118 @@ public class GenericJdbcDAO {
         }
     }
 
-    private <T> T createEntityFromResultSet(EntityKey<T> entityKey, ResultSet resultSet) {
+    private <T> T createEntityFromResultSet(Class<T> clazz, ResultSet resultSet) {
         try {
-            T entity = entityKey.entityType().getConstructor().newInstance();
-            ResultSetParser.parseForEntity(entity, resultSet);
+            T entity = clazz.getConstructor().newInstance();
+            try {
+                for (Field field : entity.getClass().getDeclaredFields()) {
+                    field.setAccessible(true);
+                    if (isEntityField(field)) {
+                        var joinClazz = field.getType();
+                        var joinColumnName = ParameterNameResolver.resolveColumnName(field);
+                        var joinColumnValue = resultSet.getObject(joinColumnName);
+                        var entityKey = new EntityKey<>(joinClazz, joinColumnValue);
+                        var joinEntity = loadFromDB(entityKey);
+                        field.set(entity, joinEntity);
+                    } else if (isEntityCollectionField(field)) {
+                        var joinClazz = getJoinCollectionEntityType(field);
+                        var entityFieldInJoinClazz = getJoinClazzField(clazz, joinClazz);
+                        var joinEntityId = resultSet.getObject(ParameterNameResolver.getIdFieldName(joinClazz));
+                        var lazyList = createLazyList(joinClazz, entityFieldInJoinClazz, joinEntityId);
+                        field.set(entity, lazyList);
+                    } else {
+                        String columnName = ParameterNameResolver.resolveColumnName(field);
+                        field.set(entity, resultSet.getObject(columnName));
+                    }
+                }
+            } catch (Exception exception) {
+                throw new ResultSetParseException(String
+                        .format("Error parsing result set for entity of type: %s",
+                                entity.getClass().getName()), exception);
+            }
 
             return entity;
         } catch (Exception exception) {
             throw new DaoOperationException(String.format(
-                    "Error creating entity from result set: %s", entityKey.entityType().getName()),
-                    exception
-            );
+                    "Error creating entity from result set: %s", clazz.getName()), exception);
         }
+    }
+
+    /**
+     * method returns the one entity by the restriction field
+     *
+     * @param clazz - entity class type
+     * @param field - "restriction field" of entity
+     * @param columnValue - value "restriction field" of entity
+     * @return selected entity
+     * @param <T>
+     */
+    public <T> T findBy(final Class<T> clazz, final Field field, final Object columnValue) {
+        log.trace("Call findBy({}, {}, {})", clazz, field, columnValue);
+
+        var result = findAllBy(clazz, field, columnValue);
+        if (result.size() > 1) {
+            throw new DaoOperationException(String
+                    .format("The result for entity [%s] contains more than one line: %s", clazz.getName()));
+        }
+
+        return result.get(0);
+    }
+
+    /**
+     * method returns the entity list by the restriction field
+     *
+     * @param clazz - entity class type
+     * @param field - "restriction field" of entity
+     * @param columnValue - value "restriction field" of entity
+     * @return selected list entities
+     * @param <T>
+     */
+    public <T> List<T> findAllBy(final Class<T> clazz, final Field field, final Object columnValue) {
+        log.trace("Call findAllBy({}, {}, {})", clazz, field, columnValue);
+
+        List<T> resultList = new ArrayList<>();
+        try (Connection connection = dataSource.getConnection()) {
+            var selectByColumnStatement = prepareSelectStatement(connection, clazz, field, columnValue);
+            ResultSet resultSet = selectByColumnStatement.executeQuery();
+            while (resultSet.next()) {
+                resultList.add(createEntityFromResultSet(clazz, resultSet));
+            }
+
+            return resultList;
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String
+                    .format("Error loading entities from the DB: %s", clazz.getName()), exception);
+        }
+    }
+
+    private PreparedStatement prepareSelectStatement(final Connection connection,
+                                                     final Class<?> clazz,
+                                                     final Field field,
+                                                     final Object columnValue) {
+        try {
+            var tableName = ParameterNameResolver.resolveTableName(clazz);
+            var fieldName = ParameterNameResolver.resolveColumnName(field);
+            String selectQuery = SqlQueryBuilder.buildSelectByColumnQuery(tableName, fieldName);
+
+            if (log.isInfoEnabled()) {
+                log.info("Select by column name: {}", selectQuery);
+            }
+
+            PreparedStatement selectByColumnStatement = connection.prepareStatement(selectQuery);
+            selectByColumnStatement.setObject(1, columnValue);
+
+            return selectByColumnStatement;
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String
+                    .format("Error preparing select statement for entity: %s", clazz.getName()), exception);
+        }
+    }
+
+    private <T> LazyList<T> createLazyList(Class<T> joinClazz, Field entityFieldInJoinClazz, Object entityId) {
+        Supplier<List<T>> listSupplier = () -> findAllBy(joinClazz, entityFieldInJoinClazz, entityId);
+
+        return new LazyList<>(listSupplier);
     }
 
 }

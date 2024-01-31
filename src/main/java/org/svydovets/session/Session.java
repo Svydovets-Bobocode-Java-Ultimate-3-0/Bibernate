@@ -1,6 +1,7 @@
 package org.svydovets.session;
 
 import org.svydovets.dao.GenericJdbcDAO;
+import org.svydovets.exception.SessionOperationException;
 import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
@@ -8,23 +9,32 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static org.svydovets.util.EntityReflectionUtils.getFieldValue;
+import static org.svydovets.util.EntityReflectionUtils.getIdField;
+import static org.svydovets.util.EntityReflectionUtils.isEntityCollectionField;
+import static org.svydovets.util.EntityReflectionUtils.isEntityField;
+
 public class Session {
 
     private final GenericJdbcDAO jdbcDAO;
     private final Map<EntityKey<?>, Object> entitiesCache;
+
     private final Map<EntityKey<?>, Object[]> entitiesSnapshots;
+
+    private boolean closed;
 
     public Session(GenericJdbcDAO jdbcDAO) {
         this.jdbcDAO = jdbcDAO;
         this.entitiesCache = new HashMap<>();
         this.entitiesSnapshots = new HashMap<>();
+        this.closed = false;
     }
 
     public void persist(Object entity) {
         Class<?> entityType = entity.getClass();
 
         Object generatedId = jdbcDAO.saveToDB(entity);
-        Field idField = EntityReflectionUtils.getIdField(entityType);
+        Field idField = getIdField(entityType);
         EntityReflectionUtils.setFieldValue(entity, idField, generatedId);
 
         EntityKey<?> entityKey = new EntityKey<>(entityType, generatedId);
@@ -40,6 +50,8 @@ public class Session {
      * @param <T> - type of entity
      */
     public <T> T findById(Class<T> entityType, Object id) {
+        checkIfOpenSession();
+
         EntityKey<T> entityKey = new EntityKey<>(entityType, id);
         Object entity = entitiesCache.computeIfAbsent(entityKey, jdbcDAO::loadFromDB);
         saveEntitySnapshots(entityKey, entity);
@@ -77,14 +89,25 @@ public class Session {
 
         entitiesCache.clear();
         entitiesSnapshots.clear();
+
+        closed = true;
     }
 
     private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
         Field[] fields = EntityReflectionUtils.getEntityFieldsSortedByName(entityKey.entityType());
         Object[] snapshots = new Object[fields.length];
         for (int i = 0; i < fields.length; i++) {
-            snapshots[i] = EntityReflectionUtils.getFieldValue(entity, fields[i]);
+            snapshots[i] = getFieldValue(entity, fields[i]);
+            var field = fields[i];
+            if (isEntityField(field)) {
+                snapshots[i] = getFieldValue(entity, field);
+            } else if (!isEntityCollectionField(field)) {
+                var joinEntity = getFieldValue(entity, field);
+                var joinIdField = getIdField(joinEntity.getClass());
+                snapshots[i] = getFieldValue(joinEntity, joinIdField);
+            }
         }
+
         entitiesSnapshots.put(entityKey, snapshots);
     }
 
@@ -102,10 +125,11 @@ public class Session {
         Field[] fields = EntityReflectionUtils.getEntityFieldsSortedByName(entityKey.entityType());
         Object[] snapshots = entitiesSnapshots.get(entityKey);
         for (int i = 0; i < snapshots.length; i++) {
-            if (!Objects.equals(snapshots[i], EntityReflectionUtils.getFieldValue(entity, fields[i]))) {
+            if (!Objects.equals(snapshots[i], getFieldValue(entity, fields[i]))) {
                 return true;
             }
         }
+
         return false;
     }
 
@@ -114,10 +138,16 @@ public class Session {
         Object mergedEntity = EntityReflectionUtils.newInstanceOf(entityType);
 
         for (Field entityField : entityType.getDeclaredFields()) {
-            Object fieldValue = EntityReflectionUtils.getFieldValue(entity, entityField);
+            Object fieldValue = getFieldValue(entity, entityField);
             EntityReflectionUtils.setFieldValue(mergedEntity, entityField, fieldValue);
         }
 
         return mergedEntity;
+    }
+
+    private void checkIfOpenSession() {
+        if (closed) {
+            throw new SessionOperationException("Current session is closed");
+        }
     }
 }
