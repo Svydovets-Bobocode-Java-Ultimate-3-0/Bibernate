@@ -8,10 +8,7 @@ import org.svydovets.util.ReflectionUtils;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Map;
 
 /**
@@ -24,6 +21,48 @@ public class GenericJdbcDAO {
 
     public GenericJdbcDAO(DataSource dataSource) {
         this.dataSource = dataSource;
+    }
+
+    public Object saveToDB(Object entity) {
+        try (Connection connection = dataSource.getConnection()) {
+            return save(entity, connection);
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String.format(
+                    "Error saving entity to the DB: %s", entity.getClass().getName()),
+                    exception
+            );
+        }
+    }
+
+    private Object save(Object entity, Connection connection) throws SQLException {
+        PreparedStatement insertStatement = prepareInsertStatement(entity, connection);
+        insertStatement.executeUpdate();
+        ResultSet resultSet = insertStatement.getGeneratedKeys();
+        if (!resultSet.next()) {
+            throw new DaoOperationException(String.format("Error fetching generated id for entity: %s", entity.getClass().getName()));
+        }
+
+        return resultSet.getObject(1);
+    }
+
+    private PreparedStatement prepareInsertStatement(Object entity, Connection connection) {
+        String insertQuery = SqlQueryBuilder.buildInsertQuery(entity);
+        if (log.isInfoEnabled()) {
+            log.info(String.format("Insert: %s", insertQuery));
+        }
+        try {
+            PreparedStatement insertStatement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS);
+            Field[] entityFields = ReflectionUtils.getInsertableFieldsForIdentityGenerationType(entity.getClass());
+            for (int i = 0; i < entityFields.length; i++) {
+                insertStatement.setObject(i + 1, ReflectionUtils.getFieldValue(entity, entityFields[i]));
+            }
+            return insertStatement;
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String.format(
+                    "Error preparing insert statement for entity: %s", entity.getClass().getName()),
+                    exception
+            );
+        }
     }
 
     public <T> T loadFromDB(EntityKey<T> entityKey) {
