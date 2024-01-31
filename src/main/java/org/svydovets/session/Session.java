@@ -46,13 +46,23 @@ public class Session {
         return clazz.cast(entity);
     }
 
-    private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
-        Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
-        Object[] snapshots = new Object[fields.length];
-        for (int i = 0; i < fields.length; i++) {
-            snapshots[i] = ReflectionUtils.getFieldValue(entity, fields[i]);
+    public <T> T merge(T entity) {
+        EntityKey<T> entityKey = EntityKey.of(entity);
+        if (entitiesCache.containsKey(entityKey)) {
+            return entityKey.clazz().cast(entitiesCache.get(entityKey));
         }
-        entitiesSnapshots.put(entityKey, snapshots);
+
+        Object loadedEntity = jdbcDAO.loadFromDB(entityKey);
+        if (loadedEntity != null) {
+            saveEntitySnapshots(entityKey, loadedEntity);
+
+            Object mergedEntity = mergeEntity(entity);
+            entitiesCache.put(entityKey, mergedEntity);
+
+            return entityKey.clazz().cast(mergedEntity);
+        }
+
+        return null;
     }
 
     /**
@@ -67,6 +77,15 @@ public class Session {
 
         entitiesCache.clear();
         entitiesSnapshots.clear();
+    }
+
+    private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
+        Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
+        Object[] snapshots = new Object[fields.length];
+        for (int i = 0; i < fields.length; i++) {
+            snapshots[i] = ReflectionUtils.getFieldValue(entity, fields[i]);
+        }
+        entitiesSnapshots.put(entityKey, snapshots);
     }
 
     private void performDirtyCheck() {
@@ -88,5 +107,17 @@ public class Session {
             }
         }
         return false;
+    }
+
+    private Object mergeEntity(Object entity) {
+        Class<?> entityType = entity.getClass();
+        Object mergedEntity = ReflectionUtils.newInstanceOf(entityType);
+
+        for (Field entityField : entityType.getDeclaredFields()) {
+            Object fieldValue = ReflectionUtils.getFieldValue(entity, entityField);
+            ReflectionUtils.setFieldValue(mergedEntity, entityField, fieldValue);
+        }
+
+        return mergedEntity;
     }
 }
