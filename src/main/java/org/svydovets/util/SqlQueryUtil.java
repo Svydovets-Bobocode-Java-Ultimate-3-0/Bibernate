@@ -8,24 +8,24 @@ import java.util.stream.Collectors;
 
 public class SqlQueryUtil {
 
-    public static String resolveColumnNamesForInsert(Class<?> clazz) {
-        Field[] insertableFields = ReflectionUtils.getInsertableFieldsForIdentityGenerationType(clazz);
+    public static String resolveColumnNamesForInsert(Class<?> entityType) {
+        Field[] insertableFields = EntityReflectionUtils.getInsertableFieldsForIdentityGenerationType(entityType);
         return Arrays.stream(insertableFields)
                 .map(ParameterNameResolver::resolveColumnName)
                 .collect(Collectors.joining(", "));
     }
 
-    public static String resolveColumnValuesForInsert(Class<?> clazz) {
-        Field[] insertableFields = ReflectionUtils.getInsertableFieldsForIdentityGenerationType(clazz);
+    public static String resolveColumnValuesForInsert(Class<?> entityType) {
+        Field[] insertableFields = EntityReflectionUtils.getInsertableFieldsForIdentityGenerationType(entityType);
 
         return Arrays.stream(insertableFields)
                 .map(field -> "?")
                 .collect(Collectors.joining(", "));
     }
 
-    public static String resolveUpdatableColumnsWithValues(Class<?> clazz) {
+    public static String resolveUpdatableColumnsWithValues(Class<?> entityType) {
         StringBuilder updateBuilder = new StringBuilder();
-        Field[] entityFields = ReflectionUtils.getUpdatableFields(clazz);
+        Field[] entityFields = EntityReflectionUtils.getUpdatableFields(entityType);
         for (int i = 0; i < entityFields.length; i++) {
             String columnName = ParameterNameResolver.resolveColumnName(entityFields[i]);
             updateBuilder.append(columnName).append(" = ").append("?");

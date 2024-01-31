@@ -1,7 +1,7 @@
 package org.svydovets.session;
 
 import org.svydovets.dao.GenericJdbcDAO;
-import org.svydovets.util.ReflectionUtils;
+import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -21,13 +21,13 @@ public class Session {
     }
 
     public void persist(Object entity) {
-        Class<?> clazz = entity.getClass();
+        Class<?> entityType = entity.getClass();
 
         Object generatedId = jdbcDAO.saveToDB(entity);
-        Field idField = ReflectionUtils.getIdField(clazz);
-        ReflectionUtils.setFieldValue(entity, idField, generatedId);
+        Field idField = EntityReflectionUtils.getIdField(entityType);
+        EntityReflectionUtils.setFieldValue(entity, idField, generatedId);
 
-        EntityKey<?> entityKey = new EntityKey<>(clazz, generatedId);
+        EntityKey<?> entityKey = new EntityKey<>(entityType, generatedId);
         entitiesCache.put(entityKey, entity);
         saveEntitySnapshots(entityKey, entity);
     }
@@ -35,21 +35,21 @@ public class Session {
     /**
      * This method load entity form DB by entity type and primary key
      *
-     * @param clazz
+     * @param entityType
      * @param id - entity id
      * @param <T> - type of entity
      */
-    public <T> T findById(Class<T> clazz, Object id) {
-        EntityKey<T> entityKey = new EntityKey<>(clazz, id);
+    public <T> T findById(Class<T> entityType, Object id) {
+        EntityKey<T> entityKey = new EntityKey<>(entityType, id);
         Object entity = entitiesCache.computeIfAbsent(entityKey, jdbcDAO::loadFromDB);
         saveEntitySnapshots(entityKey, entity);
-        return clazz.cast(entity);
+        return entityType.cast(entity);
     }
 
     public <T> T merge(T entity) {
         EntityKey<T> entityKey = EntityKey.of(entity);
         if (entitiesCache.containsKey(entityKey)) {
-            return entityKey.clazz().cast(entitiesCache.get(entityKey));
+            return entityKey.entityType().cast(entitiesCache.get(entityKey));
         }
 
         Object loadedEntity = jdbcDAO.loadFromDB(entityKey);
@@ -59,7 +59,7 @@ public class Session {
             Object mergedEntity = mergeEntity(entity);
             entitiesCache.put(entityKey, mergedEntity);
 
-            return entityKey.clazz().cast(mergedEntity);
+            return entityKey.entityType().cast(mergedEntity);
         }
 
         return null;
@@ -80,10 +80,10 @@ public class Session {
     }
 
     private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
-        Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
+        Field[] fields = EntityReflectionUtils.getEntityFieldsSortedByName(entityKey.entityType());
         Object[] snapshots = new Object[fields.length];
         for (int i = 0; i < fields.length; i++) {
-            snapshots[i] = ReflectionUtils.getFieldValue(entity, fields[i]);
+            snapshots[i] = EntityReflectionUtils.getFieldValue(entity, fields[i]);
         }
         entitiesSnapshots.put(entityKey, snapshots);
     }
@@ -99,10 +99,10 @@ public class Session {
         EntityKey<?> entityKey = entry.getKey();
         Object entity = entry.getValue();
 
-        Field[] fields = ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
+        Field[] fields = EntityReflectionUtils.getEntityFieldsSortedByName(entityKey.entityType());
         Object[] snapshots = entitiesSnapshots.get(entityKey);
         for (int i = 0; i < snapshots.length; i++) {
-            if (!Objects.equals(snapshots[i], ReflectionUtils.getFieldValue(entity, fields[i]))) {
+            if (!Objects.equals(snapshots[i], EntityReflectionUtils.getFieldValue(entity, fields[i]))) {
                 return true;
             }
         }
@@ -111,11 +111,11 @@ public class Session {
 
     private Object mergeEntity(Object entity) {
         Class<?> entityType = entity.getClass();
-        Object mergedEntity = ReflectionUtils.newInstanceOf(entityType);
+        Object mergedEntity = EntityReflectionUtils.newInstanceOf(entityType);
 
         for (Field entityField : entityType.getDeclaredFields()) {
-            Object fieldValue = ReflectionUtils.getFieldValue(entity, entityField);
-            ReflectionUtils.setFieldValue(mergedEntity, entityField, fieldValue);
+            Object fieldValue = EntityReflectionUtils.getFieldValue(entity, entityField);
+            EntityReflectionUtils.setFieldValue(mergedEntity, entityField, fieldValue);
         }
 
         return mergedEntity;

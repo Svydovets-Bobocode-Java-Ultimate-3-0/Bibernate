@@ -20,11 +20,11 @@ public class SqlQueryBuilder {
     private static final String DELETE_BY_ID_SQL = "delete from %s where %s = ?";
 
     public static String buildInsertQuery(Object entity) {
-        Class<?> clazz = entity.getClass();
+        Class<?> entityType = entity.getClass();
 
-        String tableName = ParameterNameResolver.resolveTableName(clazz);
-        String columnNames = SqlQueryUtil.resolveColumnNamesForInsert(clazz);
-        String columnValues = SqlQueryUtil.resolveColumnValuesForInsert(clazz);
+        String tableName = ParameterNameResolver.resolveTableName(entityType);
+        String columnNames = SqlQueryUtil.resolveColumnNamesForInsert(entityType);
+        String columnValues = SqlQueryUtil.resolveColumnValuesForInsert(entityType);
 
         return String.format(INSERT_SQL, tableName, columnNames, columnValues);
     }
@@ -32,13 +32,13 @@ public class SqlQueryBuilder {
     /**
      * This method helps to build a SELECT QUERY based on the primary key.
      *
-     * @param clazz - entity class with annotation @Id
+     * @param entityType - entity class with annotation @Id
      */
-    public static String buildSelectByIdQuery(Class<?> clazz) {
-        log.trace("Call buildSelectByIdQuery({}) for class base entity", clazz);
+    public static String buildSelectByIdQuery(Class<?> entityType) {
+        log.trace("Call buildSelectByIdQuery({}) for class base entity", entityType);
 
-        String tableName = ParameterNameResolver.resolveTableName(clazz);
-        String idColumnName = ParameterNameResolver.getIdFieldName(clazz);
+        String tableName = ParameterNameResolver.resolveTableName(entityType);
+        String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
 
         return String.format(SELECT_BY_ID_SQL, tableName, idColumnName);
     }
@@ -46,14 +46,14 @@ public class SqlQueryBuilder {
     /**
      * This method helps to build a UPDATE QUERY based on the primary key.
      *
-     * @param clazz - entity class with annotation @Id
+     * @param entityType - entity class with annotation @Id
      */
-    public static String buildUpdateByIdQuery(Class<?> clazz) {
-        log.trace("Call buildUpdateByIdQuery({}) for  entity class", clazz);
+    public static String buildUpdateByIdQuery(Class<?> entityType) {
+        log.trace("Call buildUpdateByIdQuery({}) for  entity class", entityType);
 
-        String tableName = ParameterNameResolver.resolveTableName(clazz);
-        String idColumnName = ParameterNameResolver.getIdFieldName(clazz);
-        String updatableColumns = SqlQueryUtil.resolveUpdatableColumnsWithValues(clazz);
+        String tableName = ParameterNameResolver.resolveTableName(entityType);
+        String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
+        String updatableColumns = SqlQueryUtil.resolveUpdatableColumnsWithValues(entityType);
 
         return String.format(UPDATE_BY_ID_SQL, tableName, updatableColumns, idColumnName);
     }
@@ -61,13 +61,13 @@ public class SqlQueryBuilder {
     /**
      * This method helps to build a DELETE QUERY based on the primary key.
      *
-     * @param clazz - entity class with annotation @Id
+     * @param entityType - entity class with annotation @Id
      */
-    public static String buildDeleteByIdQuery(Class<?> clazz) {
-        log.trace("Call buildDeleteByIdQuery({}) for  entity class", clazz);
+    public static String buildDeleteByIdQuery(Class<?> entityType) {
+        log.trace("Call buildDeleteByIdQuery({}) for  entity class", entityType);
 
-        String tableName = ParameterNameResolver.resolveTableName(clazz);
-        String idColumnName = ParameterNameResolver.getIdFieldName(clazz);
+        String tableName = ParameterNameResolver.resolveTableName(entityType);
+        String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
 
         return String.format(DELETE_BY_ID_SQL, tableName, idColumnName);
     }

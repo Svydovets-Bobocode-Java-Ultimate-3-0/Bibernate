@@ -4,11 +4,15 @@ import lombok.extern.log4j.Log4j2;
 import org.svydovets.exception.DaoOperationException;
 import org.svydovets.query.SqlQueryBuilder;
 import org.svydovets.session.EntityKey;
-import org.svydovets.util.ReflectionUtils;
+import org.svydovets.util.EntityReflectionUtils;
 
 import javax.sql.DataSource;
 import java.lang.reflect.Field;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.Map;
 
 /**
@@ -52,9 +56,9 @@ public class GenericJdbcDAO {
         }
         try {
             PreparedStatement insertStatement = connection.prepareStatement(insertQuery, Statement.RETURN_GENERATED_KEYS);
-            Field[] entityFields = ReflectionUtils.getInsertableFieldsForIdentityGenerationType(entity.getClass());
+            Field[] entityFields = EntityReflectionUtils.getInsertableFieldsForIdentityGenerationType(entity.getClass());
             for (int i = 0; i < entityFields.length; i++) {
-                insertStatement.setObject(i + 1, ReflectionUtils.getFieldValue(entity, entityFields[i]));
+                insertStatement.setObject(i + 1, EntityReflectionUtils.getFieldValue(entity, entityFields[i]));
             }
             return insertStatement;
         } catch (SQLException exception) {
@@ -70,7 +74,7 @@ public class GenericJdbcDAO {
             return load(entityKey, connection);
         } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
-                    "Error loading entity from the DB: %s", entityKey.clazz().getName()),
+                    "Error loading entity from the DB: %s", entityKey.entityType().getName()),
                     exception
             );
         }
@@ -99,7 +103,7 @@ public class GenericJdbcDAO {
      * @param <T>
      */
     public <T> void remove(EntityKey<T> entityKey) {
-        Class<T> entityClass = entityKey.clazz();
+        Class<T> entityClass = entityKey.entityType();
 
         log.trace("Call remove({}) for entity class", entityClass);
 
@@ -126,19 +130,19 @@ public class GenericJdbcDAO {
         PreparedStatement updateByIdStatement = prepareUpdateStatement(connection, entityKey, entity);
         var updatedRowsCount = updateByIdStatement.executeUpdate();
         if (updatedRowsCount == 0) {
-            throw new DaoOperationException(String.format("Update has not been perform for entity: %s", entityKey.clazz().getName()));
+            throw new DaoOperationException(String.format("Update has not been perform for entity: %s", entityKey.entityType().getName()));
         }
     }
 
     private PreparedStatement prepareUpdateStatement(Connection connection, EntityKey<?> entityKey, Object entity) {
         try {
-            String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityKey.clazz());
+            String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityKey.entityType());
             if (log.isInfoEnabled()) {
                 log.info("Update by id: {}", updateQuery);
             }
 
             PreparedStatement updateByIdStatement = connection.prepareStatement(updateQuery);
-            Field[] entityFields = ReflectionUtils.getUpdatableFields(entityKey.clazz());
+            Field[] entityFields = EntityReflectionUtils.getUpdatableFields(entityKey.entityType());
             for (int i = 0; i < entityFields.length; i++) {
                 entityFields[i].setAccessible(true);
                 updateByIdStatement.setObject(i + 1, entityFields[i].get(entity));
@@ -149,7 +153,7 @@ public class GenericJdbcDAO {
             return updateByIdStatement;
         } catch (Exception exception) {
             throw new DaoOperationException(String
-                    .format("Error preparing update statement for entity: %s", entityKey.clazz().getName()), exception);
+                    .format("Error preparing update statement for entity: %s", entityKey.entityType().getName()), exception);
         }
     }
 
@@ -165,7 +169,7 @@ public class GenericJdbcDAO {
 
     private PreparedStatement prepareSelectStatement(EntityKey<?> entityKey, Connection connection) {
         try {
-            String selectQuery = SqlQueryBuilder.buildSelectByIdQuery(entityKey.clazz());
+            String selectQuery = SqlQueryBuilder.buildSelectByIdQuery(entityKey.entityType());
 
             if (log.isInfoEnabled()) {
                 log.info("Select by id: {}", selectQuery);
@@ -177,7 +181,7 @@ public class GenericJdbcDAO {
             return selectByIdStatement;
         } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
-                    "Error preparing select statement for entity: %s", entityKey.clazz().getName()),
+                    "Error preparing select statement for entity: %s", entityKey.entityType().getName()),
                     exception
             );
         }
@@ -185,13 +189,13 @@ public class GenericJdbcDAO {
 
     private <T> T createEntityFromResultSet(EntityKey<T> entityKey, ResultSet resultSet) {
         try {
-            T entity = entityKey.clazz().getConstructor().newInstance();
+            T entity = entityKey.entityType().getConstructor().newInstance();
             ResultSetParser.parseForEntity(entity, resultSet);
 
             return entity;
         } catch (Exception exception) {
             throw new DaoOperationException(String.format(
-                    "Error creating entity from result set: %s", entityKey.clazz().getName()),
+                    "Error creating entity from result set: %s", entityKey.entityType().getName()),
                     exception
             );
         }
