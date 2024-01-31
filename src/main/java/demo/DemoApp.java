@@ -1,8 +1,5 @@
 package demo;
 
-import demo.entity.User;
-import org.svydovets.session.Session;
-import org.svydovets.session.SessionFactory;
 
 public class DemoApp {
     public static void main(String[] args) {

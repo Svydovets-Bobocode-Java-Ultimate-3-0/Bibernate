@@ -13,7 +13,7 @@ import org.svydovets.util.SqlQueryUtil;
 public class SqlQueryBuilder {
     private static final String SELECT_BY_ID_SQL = "select * from %s where %s = ?";
 
-    private static final String INSERT_SQL = "insert into %s(%s) values(%s)";
+    private static final String INSERT_SQL = "insert into %s (%s) values(%s)";
 
     private static final String UPDATE_BY_ID_SQL = "update %s set %s where %s = ?";
 

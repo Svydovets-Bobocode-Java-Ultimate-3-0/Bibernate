@@ -23,10 +23,10 @@ public class GenericJdbcDAO {
     public Object saveToDB(Object entity) {
         try (Connection connection = dataSource.getConnection()) {
             return save(entity, connection);
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
                     "Error saving entity to the DB: %s", entity.getClass().getName()),
-                    e
+                    exception
             );
         }
     }
@@ -54,10 +54,10 @@ public class GenericJdbcDAO {
                 insertStatement.setObject(i + 1, ReflectionUtils.getFieldValue(entity, entityFields[i]));
             }
             return insertStatement;
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
                     "Error preparing insert statement for entity: %s", entity.getClass().getName()),
-                    e
+                    exception
             );
         }
     }
@@ -65,10 +65,10 @@ public class GenericJdbcDAO {
     public <T> T loadFromDB(EntityKey<T> entityKey) {
         try (Connection connection = dataSource.getConnection()) {
             return load(entityKey, connection);
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
                     "Error loading entity from the DB: %s", entityKey.clazz().getName()),
-                    e
+                    exception
             );
         }
     }
@@ -76,10 +76,10 @@ public class GenericJdbcDAO {
     public void update(Map.Entry<EntityKey<?>, Object> keyEntityEntry) {
         try (Connection connection = dataSource.getConnection()) {
             performUpdate(connection, keyEntityEntry.getKey(), keyEntityEntry.getValue());
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(
                     String.format("Error updating entity: %s", keyEntityEntry.getKey()),
-                    e
+                    exception
             );
         }
     }
@@ -107,10 +107,10 @@ public class GenericJdbcDAO {
             }
             updateByIdStatement.setObject(entityFields.length + 1, entityKey.id());
             return updateByIdStatement;
-        } catch (Exception e) {
+        } catch (Exception exception) {
             throw new DaoOperationException(
                     String.format("Error preparing update statement for entity: %s", entityKey.clazz()),
-                    e
+                    exception
             );
         }
     }
@@ -135,10 +135,10 @@ public class GenericJdbcDAO {
             PreparedStatement selectByIdStatement = connection.prepareStatement(selectQuery);
             selectByIdStatement.setObject(1, entityKey.id());
             return selectByIdStatement;
-        } catch (SQLException e) {
+        } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
                     "Error preparing select statement for entity: %s", entityKey.clazz().getName()),
-                    e
+                    exception
             );
         }
     }
@@ -148,10 +148,10 @@ public class GenericJdbcDAO {
             T entity = entityKey.clazz().getConstructor().newInstance();
             ResultSetParser.parseForEntity(entity, resultSet);
             return entity;
-        } catch (Exception e) {
+        } catch (Exception exception) {
             throw new DaoOperationException(String.format(
                     "Error creating entity from result set: %s", entityKey.clazz().getName()),
-                    e
+                    exception
             );
         }
     }
