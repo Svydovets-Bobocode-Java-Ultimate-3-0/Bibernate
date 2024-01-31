@@ -2,9 +2,10 @@ package org.svydovets.query;
 
 import lombok.extern.log4j.Log4j2;
 import org.svydovets.annotation.Column;
+import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
 import org.svydovets.annotation.Table;
-import org.svydovets.util.ReflectionUtils;
+import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
 
@@ -21,20 +22,20 @@ public class ParameterNameResolver {
     /**
      * This method helps to define name of declared <strong>entity class</strong> by name from annotation
      *
-     * @param clazz method annotated or not as @Table
+     * @param entityType method annotated or not as @Table
      * @return table name value from annotation or if annotation name is empty - return class name
      * @see Table
      */
-    public static String resolveTableName(Class<?> clazz) {
-        log.trace("Call resolveTableName({}) for class base entity", clazz);
+    public static String resolveTableName(Class<?> entityType) {
+        log.trace("Call resolveTableName({}) for class base entity", entityType);
 
-        Table tableAnnotation = clazz.getAnnotation(Table.class);
+        Table tableAnnotation = entityType.getAnnotation(Table.class);
         if (tableAnnotation == null) {
-            return clazz.getSimpleName();
+            return entityType.getSimpleName();
         }
 
         return tableAnnotation.name().isEmpty()
-                ? clazz.getSimpleName()
+                ? entityType.getSimpleName()
                 : tableAnnotation.name();
     }
 
@@ -62,13 +63,26 @@ public class ParameterNameResolver {
     /**
      * This method helps to define list name of declared <strong>entity field</strong> by name from annotation
      *
-     * @param clazz - entity class annotated as @Id
+     * @param entityType - entity class annotated as @Id
      * @return primary key column name from annotation entity class
      * @see Id
      */
-    public static String getIdFieldName(Class<?> clazz) {
-        log.trace("Call getIdFieldName({}) for  entity class", clazz);
+    public static String getIdFieldName(Class<?> entityType) {
+        log.trace("Call getIdFieldName({}) for  entity class", entityType);
 
-        return resolveColumnName(ReflectionUtils.getIdField(clazz));
+        return resolveColumnName(EntityReflectionUtils.getIdField(entityType));
+    }
+
+    /**
+     * This method helps determine whether a class is marked with an annotation @Entity
+     *
+     * @param entityType - entity class annotated or not as @Entity
+     * @return
+     * @see Entity
+     */
+    public static boolean isEntity(Class<?> entityType) {
+        log.trace("Call isEntity({}) for  entity class", entityType);
+
+        return entityType.isAnnotationPresent(Entity.class);
     }
 }

@@ -56,7 +56,7 @@ public class SessionFactory {
      *
      * @return A {@code Properties} object containing the database URL, username, and password.
      * @throws InvalidParameterPropertiesException if the configuration file cannot be read
-     * or if required properties are missing.
+     *                                             or if required properties are missing.
      */
     private static Properties getDBProperties() {
         java.util.Properties properties = new java.util.Properties();

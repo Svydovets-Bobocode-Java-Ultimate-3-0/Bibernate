@@ -8,6 +8,7 @@ import org.junit.platform.commons.util.ReflectionUtils;
 import org.mockito.Mockito;
 import org.svydovets.baseEntity.PersonSessionTest;
 import org.svydovets.dao.GenericJdbcDAO;
+import org.svydovets.util.EntityReflectionUtils;
 import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
 import java.lang.reflect.Field;
@@ -25,13 +26,10 @@ class SessionTest {
 
     private Session sessionTestable;
     private GenericJdbcDAO mockJdbcDAO;
-    private Map<EntityKey<?>, Object> entitiesCacheExpected = new HashMap<>();
-    private Map<EntityKey<?>, Object[]> entitiesSnapshotsExpected = new HashMap<>();
+    private final Map<EntityKey<?>, Object> entitiesCacheExpected = new HashMap<>();
+    private final Map<EntityKey<?>, Object[]> entitiesSnapshotsExpected = new HashMap<>();
 
-    private Field entitiesCacheField;
-    private Field entitiesSnapshotsField;
-
-    private AtomicInteger personIdSequence = new AtomicInteger(0);
+    private final AtomicInteger personIdSequence = new AtomicInteger(0);
 
     @BeforeEach
     public void initData() {
@@ -196,7 +194,7 @@ class SessionTest {
     private void addPersonToEntityExpected(PersonSessionTest person) throws IllegalAccessException {
         EntityKey<PersonSessionTest> entKeyId = getEntityKeyByPerson(person);
         entitiesCacheExpected.put(entKeyId, person);
-        entitiesCacheField = ReflectionUtils.findFields(Session.class,
+        Field entitiesCacheField = ReflectionUtils.findFields(Session.class,
                 field -> field.getName().equals("entitiesCache"),
                 ReflectionUtils.HierarchyTraversalMode.TOP_DOWN).get(0);
         entitiesCacheField.setAccessible(true);
@@ -208,7 +206,7 @@ class SessionTest {
     }
 
     private void addEntityToSnapshots(EntityKey<?> entityKey, Object entity) throws IllegalAccessException {
-        Field[] fields = org.svydovets.util.ReflectionUtils.getEntityFieldsSortedByName(entityKey.clazz());
+        Field[] fields = EntityReflectionUtils.getEntityFieldsSortedByName(entityKey.entityType());
         Object[] snapshots = new Object[fields.length];
         for (int i = 0; i < fields.length; i++) {
             snapshots[i] = getFieldValue(entity, fields[i]);
@@ -216,7 +214,7 @@ class SessionTest {
 
         entitiesSnapshotsExpected.put(entityKey, snapshots);
 
-        entitiesSnapshotsField = ReflectionUtils.findFields(Session.class,
+        Field entitiesSnapshotsField = ReflectionUtils.findFields(Session.class,
                 field -> field.getName().equals("entitiesSnapshots"),
                 ReflectionUtils.HierarchyTraversalMode.TOP_DOWN).get(0);
         entitiesSnapshotsField.setAccessible(true);

@@ -17,7 +17,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-public class ReflectionUtilsTest {
+public class EntityReflectionUtilsTest {
 
     @Test
     public void shouldReturnIdFieldWhenIdIsSpecified() {
@@ -25,14 +25,14 @@ public class ReflectionUtilsTest {
                 .filter(field -> field.isAnnotationPresent(Id.class))
                 .findAny().orElseThrow();
 
-        assertThat(idField).isEqualTo(ReflectionUtils.getIdField(Person1.class));
+        assertThat(idField).isEqualTo(EntityReflectionUtils.getIdField(Person1.class));
     }
 
     @Test
     public void shouldThrowAnnotationMappingExceptionWhenClassDoesNotHaveAnIdentifier() {
         assertThrows(
                 AnnotationMappingException.class,
-                () -> ReflectionUtils.getIdField(PersonWithoutId.class),
+                () -> EntityReflectionUtils.getIdField(PersonWithoutId.class),
                 String.format("Identifier is not specified for type: %s (Each entity must have field marked as '@Id')", PersonWithoutId.class.getName())
         );
     }
@@ -40,7 +40,7 @@ public class ReflectionUtilsTest {
     public void shouldThrowAnnotationMappingExceptionWhenClassIsNotMarkedAsEntity() {
         assertThrows(
                 AnnotationMappingException.class,
-                () -> ReflectionUtils.getIdField(NotManagedPerson.class),
+                () -> EntityReflectionUtils.getIdField(NotManagedPerson.class),
                 String.format("Not a managed type. Class must be marked as'@Entity': %s", NotManagedPerson.class)
         );
     }
@@ -55,7 +55,7 @@ public class ReflectionUtilsTest {
                 personClass.getDeclaredField("lastName"),
                 personClass.getDeclaredField("male"),
         };
-        Assertions.assertThat(ReflectionUtils.getEntityFieldsSortedByName(personClass))
+        Assertions.assertThat(EntityReflectionUtils.getEntityFieldsSortedByName(personClass))
                 .isEqualTo(expected);
     }
 
@@ -68,7 +68,7 @@ public class ReflectionUtilsTest {
                 personClass.getDeclaredField("lastName"),
                 personClass.getDeclaredField("male"),
         };
-        Assertions.assertThat(ReflectionUtils.getEntityFieldsWithoutIdFieldSortedByName(personClass))
+        Assertions.assertThat(EntityReflectionUtils.getUpdatableFields(personClass))
                 .isEqualTo(expected);
     }
 }
