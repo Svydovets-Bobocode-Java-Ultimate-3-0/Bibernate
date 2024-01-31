@@ -1,6 +1,7 @@
 package org.svydovets.session;
 
 import org.svydovets.dao.GenericJdbcDAO;
+import org.svydovets.session.actionQueue.action.MergeAction;
 import org.svydovets.session.actionQueue.action.PersistAction;
 import org.svydovets.session.actionQueue.executor.ActionQueue;
 import org.svydovets.util.EntityReflectionUtils;
@@ -30,7 +31,7 @@ public class Session {
         PersistAction persistAction = new PersistAction(entity, true);
         actionQueue.addPersistAction(persistAction);
 
-        EntityKey<?> entityKey = new EntityKey<>(entityType, persistAction.getGeneratedId());
+        EntityKey<?> entityKey = persistAction.getEntityEntry().entityKey();
         entitiesCache.put(entityKey, entity);
         saveEntitySnapshots(entityKey, entity);
     }
@@ -55,9 +56,6 @@ public class Session {
             return entityKey.entityType().cast(entitiesCache.get(entityKey));
         }
 
-//        MergeAction mergeAction = new MergeAction();
-//        actionQueue.addMergeAction(mergeAction);
-
         Object loadedEntity = jdbcDAO.loadFromDB(entityKey);
         if (loadedEntity != null) {
             saveEntitySnapshots(entityKey, loadedEntity);
@@ -80,6 +78,8 @@ public class Session {
     public void close() {
         performDirtyCheck();
 
+        actionQueue.performAccumulatedActions();
+
         entitiesCache.clear();
         entitiesSnapshots.clear();
     }
@@ -97,7 +97,8 @@ public class Session {
         entitiesCache.entrySet()
                 .stream()
                 .filter(this::hasChanged)
-                .forEach(jdbcDAO::update);
+                .map(entry -> EntityEntry.valueOf(entry.getKey(), entry.getValue()))
+                .forEach(entityEntry -> actionQueue.addMergeAction(new MergeAction(entityEntry)));
     }
 
     private boolean hasChanged(Map.Entry<EntityKey<?>, Object> entry) {

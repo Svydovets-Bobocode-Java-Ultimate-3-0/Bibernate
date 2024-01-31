@@ -3,6 +3,7 @@ package org.svydovets.dao;
 import lombok.extern.log4j.Log4j2;
 import org.svydovets.exception.DaoOperationException;
 import org.svydovets.query.SqlQueryBuilder;
+import org.svydovets.session.EntityEntry;
 import org.svydovets.session.EntityKey;
 import org.svydovets.util.EntityReflectionUtils;
 
@@ -13,7 +14,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Map;
 
 /**
  *
@@ -83,14 +83,15 @@ public class GenericJdbcDAO {
     /**
      * This method update entity by id
      *
-     * @param keyEntityEntry
+     * @param entityEntry
      */
-    public void update(Map.Entry<EntityKey<?>, Object> keyEntityEntry) {
+    public void update(EntityEntry entityEntry) {
         try (Connection connection = dataSource.getConnection()) {
-            performUpdate(connection, keyEntityEntry.getKey(), keyEntityEntry.getValue());
+            performUpdate(connection, entityEntry);
         } catch (SQLException exception) {
+            String entityName = entityEntry.entityKey().entityType().getName();
             throw new DaoOperationException(
-                    String.format("Error updating entity: %s", keyEntityEntry.getKey()),
+                    String.format("Error updating entity: %s", entityName),
                     exception
             );
         }
@@ -126,34 +127,44 @@ public class GenericJdbcDAO {
         }
     }
 
-    private void performUpdate(Connection connection, EntityKey<?> entityKey, Object entity) throws SQLException {
-        PreparedStatement updateByIdStatement = prepareUpdateStatement(connection, entityKey, entity);
+    private void performUpdate(Connection connection, EntityEntry entityEntry) throws SQLException {
+        PreparedStatement updateByIdStatement = prepareUpdateStatement(connection, entityEntry);
         var updatedRowsCount = updateByIdStatement.executeUpdate();
         if (updatedRowsCount == 0) {
-            throw new DaoOperationException(String.format("Update has not been perform for entity: %s", entityKey.entityType().getName()));
+            String entityName = entityEntry.entityKey().entityType().getName();
+            throw new DaoOperationException(String.format("Update has not been perform for entity: %s", entityName));
         }
     }
 
-    private PreparedStatement prepareUpdateStatement(Connection connection, EntityKey<?> entityKey, Object entity) {
+    private PreparedStatement prepareUpdateStatement(Connection connection, EntityEntry entityEntry) {
         try {
-            String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityKey.entityType());
+            Class<?> entityType = entityEntry.entityKey().entityType();
+
+            String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityType);
+            System.out.println(updateQuery);
             if (log.isInfoEnabled()) {
                 log.info("Update by id: {}", updateQuery);
             }
 
             PreparedStatement updateByIdStatement = connection.prepareStatement(updateQuery);
-            Field[] entityFields = EntityReflectionUtils.getUpdatableFields(entityKey.entityType());
+
+            Object entity = entityEntry.entity();
+            Field[] entityFields = EntityReflectionUtils.getUpdatableFields(entityType);
             for (int i = 0; i < entityFields.length; i++) {
                 entityFields[i].setAccessible(true);
                 updateByIdStatement.setObject(i + 1, entityFields[i].get(entity));
             }
 
-            updateByIdStatement.setObject(entityFields.length + 1, entityKey.id());
+            Object entityId = entityEntry.entityKey().id();
+            updateByIdStatement.setObject(entityFields.length + 1, entityId);
 
             return updateByIdStatement;
         } catch (Exception exception) {
-            throw new DaoOperationException(String
-                    .format("Error preparing update statement for entity: %s", entityKey.entityType().getName()), exception);
+            String entityName = entityEntry.entityKey().entityType().getName();
+            throw new DaoOperationException(String.format(
+                    "Error preparing update statement for entity: %s", entityName),
+                    exception
+            );
         }
     }
 
