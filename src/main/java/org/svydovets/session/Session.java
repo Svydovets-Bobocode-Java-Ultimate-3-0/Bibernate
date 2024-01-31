@@ -19,11 +19,30 @@ public class Session {
         this.entitiesSnapshots = new HashMap<>();
     }
 
+    /**
+     * This method load entity form DB by entity type and primary key
+     *
+     * @param clazz
+     * @param id - entity id
+     * @param <T> - type of entity
+     */
     public <T> T findById(Class<T> clazz, Object id) {
         EntityKey<T> entityKey = new EntityKey<>(clazz, id);
         Object entity = entitiesCache.computeIfAbsent(entityKey, jdbcDAO::loadFromDB);
         saveEntitySnapshots(entityKey, entity);
         return clazz.cast(entity);
+    }
+
+    /**
+     * This method remove entity form DB by entity type and primary key
+     *
+     * @param clazz
+     * @param id - entity id
+     * @param <T> - type of entity
+     */
+    public <T> void remove(Class<T> clazz, Object id) {
+        EntityKey<T> entityKey = new EntityKey<>(clazz, id);
+        jdbcDAO.remove(entityKey);
     }
 
     private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
@@ -35,7 +54,13 @@ public class Session {
         entitiesSnapshots.put(entityKey, snapshots);
     }
 
-
+    /**
+     * This method close current session. Before closing the session, the following is performed:
+     *  - “dirty check”,
+     *  - clearing the first level cache
+     *  - clearing all snapshots.
+     *
+     */
     public void close() {
         performDirtyCheck();
 
