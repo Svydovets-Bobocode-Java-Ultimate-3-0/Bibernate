@@ -19,9 +19,9 @@ public class TransactionManagerImpl implements TransactionManager {
             throw new TransactionException("Transaction was started");
         }
         try {
-            connectionHandler.getConnection().setAutoCommit(false);
-            connectionHandler.getConnectionAttributes().setTransactionActivated(true);
             isActive = true;
+            connectionHandler.getConnectionAttributes().setTransactionActivated(true);
+            connectionHandler.getConnection().setAutoCommit(false);
         } catch (SQLException e) {
             throw new TransactionException(e.getMessage(), e);
         }
