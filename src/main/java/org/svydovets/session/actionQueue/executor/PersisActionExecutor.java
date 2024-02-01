@@ -18,7 +18,7 @@ public class PersisActionExecutor extends EntityActionExecutor<PersistAction> {
     protected void execute(PersistAction persistAction) {
         Object entity = persistAction.entity();
 
-        Object generatedId = this.jdbcDAO.saveToDB(entity);
+        Object generatedId = super.jdbcDAO.saveToDB(entity);
         Field idField = EntityReflectionUtils.getIdField(entity.getClass());
         EntityReflectionUtils.setFieldValue(entity, idField, generatedId);
 
