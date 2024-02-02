@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 
 import static org.svydovets.util.EntityReflectionUtils.getJoinClazzField;
 import static org.svydovets.util.EntityReflectionUtils.getJoinCollectionEntityType;
+import static org.svydovets.util.EntityReflectionUtils.isColumnField;
 import static org.svydovets.util.EntityReflectionUtils.isEntityCollectionField;
 import static org.svydovets.util.EntityReflectionUtils.isEntityField;
 
@@ -198,26 +199,26 @@ public class GenericJdbcDAO {
         }
     }
 
-    private <T> T createEntityFromResultSet(Class<T> clazz, ResultSet resultSet) {
+    private <T> T createEntityFromResultSet(Class<T> entityType, ResultSet resultSet) {
         try {
-            T entity = clazz.getConstructor().newInstance();
+            T entity = entityType.getConstructor().newInstance();
             try {
-                for (Field field : entity.getClass().getDeclaredFields()) {
+                for (Field field : entityType.getDeclaredFields()) {
                     field.setAccessible(true);
                     if (isEntityField(field)) {
                         var joinClazz = field.getType();
-                        var joinColumnName = ParameterNameResolver.resolveColumnName(field);
+                        var joinColumnName = ParameterNameResolver.resolveJoinColumnName(field);
                         var joinColumnValue = resultSet.getObject(joinColumnName);
                         var entityKey = new EntityKey<>(joinClazz, joinColumnValue);
                         var joinEntity = loadFromDB(entityKey);
                         field.set(entity, joinEntity);
                     } else if (isEntityCollectionField(field)) {
                         var joinClazz = getJoinCollectionEntityType(field);
-                        var entityFieldInJoinClazz = getJoinClazzField(clazz, joinClazz);
+                        var entityFieldInJoinClazz = getJoinClazzField(entityType, joinClazz);
                         var joinEntityId = resultSet.getObject(ParameterNameResolver.getIdFieldName(joinClazz));
                         var lazyList = createLazyList(joinClazz, entityFieldInJoinClazz, joinEntityId);
                         field.set(entity, lazyList);
-                    } else {
+                    } else if (isColumnField(field)) {
                         String columnName = ParameterNameResolver.resolveColumnName(field);
                         field.set(entity, resultSet.getObject(columnName));
                     }
@@ -231,26 +232,26 @@ public class GenericJdbcDAO {
             return entity;
         } catch (Exception exception) {
             throw new DaoOperationException(String.format(
-                    "Error creating entity from result set: %s", clazz.getName()), exception);
+                    "Error creating entity from result set: %s", entityType.getName()), exception);
         }
     }
 
     /**
      * method returns the one entity by the restriction field
      *
-     * @param clazz - entity class type
+     * @param entityType - entity class type
      * @param field - "restriction field" of entity
      * @param columnValue - value "restriction field" of entity
      * @return selected entity
      * @param <T>
      */
-    public <T> T findBy(final Class<T> clazz, final Field field, final Object columnValue) {
-        log.trace("Call findBy({}, {}, {})", clazz, field, columnValue);
+    public <T> T findBy(final Class<T> entityType, final Field field, final Object columnValue) {
+        log.trace("Call findBy({}, {}, {})", entityType, field, columnValue);
 
-        var result = findAllBy(clazz, field, columnValue);
+        var result = findAllBy(entityType, field, columnValue);
         if (result.size() > 1) {
             throw new DaoOperationException(String
-                    .format("The result for entity [%s] contains more than one line: %s", clazz.getName()));
+                    .format("The result for entity [%s] contains more than one line: %s", entityType.getName()));
         }
 
         return result.get(0);
@@ -259,37 +260,37 @@ public class GenericJdbcDAO {
     /**
      * method returns the entity list by the restriction field
      *
-     * @param clazz - entity class type
+     * @param entityType - entity class type
      * @param field - "restriction field" of entity
      * @param columnValue - value "restriction field" of entity
      * @return selected list entities
      * @param <T>
      */
-    public <T> List<T> findAllBy(final Class<T> clazz, final Field field, final Object columnValue) {
-        log.trace("Call findAllBy({}, {}, {})", clazz, field, columnValue);
+    public <T> List<T> findAllBy(final Class<T> entityType, final Field field, final Object columnValue) {
+        log.trace("Call findAllBy({}, {}, {})", entityType, field, columnValue);
 
         List<T> resultList = new ArrayList<>();
         try (Connection connection = dataSource.getConnection()) {
-            var selectByColumnStatement = prepareSelectStatement(connection, clazz, field, columnValue);
+            var selectByColumnStatement = prepareSelectStatement(connection, entityType, field, columnValue);
             ResultSet resultSet = selectByColumnStatement.executeQuery();
             while (resultSet.next()) {
-                resultList.add(createEntityFromResultSet(clazz, resultSet));
+                resultList.add(createEntityFromResultSet(entityType, resultSet));
             }
 
             return resultList;
         } catch (SQLException exception) {
             throw new DaoOperationException(String
-                    .format("Error loading entities from the DB: %s", clazz.getName()), exception);
+                    .format("Error loading entities from the DB: %s", entityType.getName()), exception);
         }
     }
 
     private PreparedStatement prepareSelectStatement(final Connection connection,
-                                                     final Class<?> clazz,
+                                                     final Class<?> entityType,
                                                      final Field field,
                                                      final Object columnValue) {
         try {
-            var tableName = ParameterNameResolver.resolveTableName(clazz);
-            var fieldName = ParameterNameResolver.resolveColumnName(field);
+            var tableName = ParameterNameResolver.resolveTableName(entityType);
+            var fieldName = ParameterNameResolver.resolveJoinColumnOrColumnName(field);
             String selectQuery = SqlQueryBuilder.buildSelectByColumnQuery(tableName, fieldName);
 
             if (log.isInfoEnabled()) {
@@ -302,12 +303,12 @@ public class GenericJdbcDAO {
             return selectByColumnStatement;
         } catch (SQLException exception) {
             throw new DaoOperationException(String
-                    .format("Error preparing select statement for entity: %s", clazz.getName()), exception);
+                    .format("Error preparing select statement for entity: %s", entityType.getName()), exception);
         }
     }
 
-    private <T> LazyList<T> createLazyList(Class<T> joinClazz, Field entityFieldInJoinClazz, Object entityId) {
-        Supplier<List<T>> listSupplier = () -> findAllBy(joinClazz, entityFieldInJoinClazz, entityId);
+    private <T> LazyList<T> createLazyList(Class<T> joinEntityType, Field entityFieldInJoinClazz, Object entityId) {
+        Supplier<List<T>> listSupplier = () -> findAllBy(joinEntityType, entityFieldInJoinClazz, entityId);
 
         return new LazyList<>(listSupplier);
     }

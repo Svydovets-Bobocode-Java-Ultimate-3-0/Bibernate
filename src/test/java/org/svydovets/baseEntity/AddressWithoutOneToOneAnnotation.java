@@ -3,21 +3,18 @@ package org.svydovets.baseEntity;
 import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
 import org.svydovets.annotation.JoinColumn;
-import org.svydovets.annotation.ManyToOne;
+import org.svydovets.annotation.OneToOne;
 import org.svydovets.annotation.Table;
 
 @Entity
-@Table(name = "notes")
-public class Note2 {
+@Table(name = "addresses")
+public class AddressWithoutOneToOneAnnotation {
 
     @Id
     private Integer id;
 
-    private String title;
+    private String city;
 
-    private String body;
-
-    @ManyToOne
     @JoinColumn
     private Person person;
 }

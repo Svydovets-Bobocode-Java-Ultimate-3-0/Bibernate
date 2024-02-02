@@ -11,6 +11,7 @@ import java.util.Objects;
 
 import static org.svydovets.util.EntityReflectionUtils.getFieldValue;
 import static org.svydovets.util.EntityReflectionUtils.getIdField;
+import static org.svydovets.util.EntityReflectionUtils.isColumnField;
 import static org.svydovets.util.EntityReflectionUtils.isEntityCollectionField;
 import static org.svydovets.util.EntityReflectionUtils.isEntityField;
 
@@ -99,12 +100,8 @@ public class Session {
         for (int i = 0; i < fields.length; i++) {
             snapshots[i] = getFieldValue(entity, fields[i]);
             var field = fields[i];
-            if (isEntityField(field)) {
+            if (isColumnField(field) || isEntityField(field)) {
                 snapshots[i] = getFieldValue(entity, field);
-            } else if (!isEntityCollectionField(field)) {
-                var joinEntity = getFieldValue(entity, field);
-                var joinIdField = getIdField(joinEntity.getClass());
-                snapshots[i] = getFieldValue(joinEntity, joinIdField);
             }
         }
 

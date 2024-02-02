@@ -7,11 +7,11 @@ import org.svydovets.annotation.Column;
 import org.svydovets.annotation.JoinColumn;
 import org.svydovets.annotation.Table;
 import org.svydovets.baseEntity.Note;
-import org.svydovets.baseEntity.Note2;
-import org.svydovets.baseEntity.Person1;
-import org.svydovets.baseEntity.Person2;
-import org.svydovets.baseEntity.Person3;
-import org.svydovets.baseEntity.Person4;
+import org.svydovets.baseEntity.NoteWithJoinColumnAnnotationAndWithoutNameValue;
+import org.svydovets.baseEntity.PersonWithValidAnnotations;
+import org.svydovets.baseEntity.PersonWithoutTableAnnotation;
+import org.svydovets.baseEntity.PersonWithoutTableAnnotationNameValue;
+import org.svydovets.baseEntity.PersonWithoutTableAndEntityAnnotations;
 import org.svydovets.exception.AnnotationMappingException;
 
 import java.util.Arrays;
@@ -26,25 +26,25 @@ public class ParameterNameResolverTest {
 
     @Test
     public void shouldReturnTableAnnotationNameIfNameIsSpecifiedExplicitly() {
-        String tableName = Person1.class.getAnnotation(Table.class).name();
-        assertThat(tableName).isEqualTo(ParameterNameResolver.resolveTableName(Person1.class));
+        String tableName = PersonWithValidAnnotations.class.getAnnotation(Table.class).name();
+        assertThat(tableName).isEqualTo(ParameterNameResolver.resolveTableName(PersonWithValidAnnotations.class));
     }
 
     @Test
     public void shouldReturnTableAnnotationNameIfNameIsSpecifiedNotExplicitly() {
-        String tableName = Person2.class.getSimpleName();
-        assertThat(tableName).isEqualTo(ParameterNameResolver.resolveTableName(Person2.class));
+        String tableName = PersonWithoutTableAnnotation.class.getSimpleName();
+        assertThat(tableName).isEqualTo(ParameterNameResolver.resolveTableName(PersonWithoutTableAnnotation.class));
     }
 
     @Test
     public void shouldReturnTableNameWithoutTableAnnotation() {
-        String tableName = Person3.class.getSimpleName();
-        assertThat(tableName).isEqualTo(ParameterNameResolver.resolveTableName(Person3.class));
+        String tableName = PersonWithoutTableAnnotationNameValue.class.getSimpleName();
+        assertThat(tableName).isEqualTo(ParameterNameResolver.resolveTableName(PersonWithoutTableAnnotationNameValue.class));
     }
 
     @Test
     public void shouldReturnColumnAnnotationNameIfNameIsSpecifiedExplicitly() {
-        var anyField = Arrays.stream(Person1.class.getDeclaredFields())
+        var anyField = Arrays.stream(PersonWithValidAnnotations.class.getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(Column.class) && !field.getName().isEmpty())
                 .findAny().orElseThrow();
         var column = anyField.getAnnotation(Column.class);
@@ -54,7 +54,7 @@ public class ParameterNameResolverTest {
 
     @Test
     public void shouldReturnColumnAnnotationNameIfNameIsSpecifiedNotExplicitly() {
-        var anyField = Arrays.stream(Person1.class.getDeclaredFields())
+        var anyField = Arrays.stream(PersonWithValidAnnotations.class.getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(Column.class)
                         && field.getAnnotation(Column.class).name().isEmpty())
                 .findAny().orElseThrow();
@@ -64,7 +64,7 @@ public class ParameterNameResolverTest {
 
     @Test
     public void shouldReturnColumnNameWithoutColumnAnnotation() {
-        var anyField = Arrays.stream(Person1.class.getDeclaredFields())
+        var anyField = Arrays.stream(PersonWithValidAnnotations.class.getDeclaredFields())
                 .filter(field -> !field.isAnnotationPresent(Column.class))
                 .findAny().orElseThrow();
 
@@ -73,8 +73,8 @@ public class ParameterNameResolverTest {
 
     @Test
     public void returnsPresenceOfEntityAnnotationForClass() {
-        assertTrue(ParameterNameResolver.isEntity(Person1.class));
-        assertFalse(ParameterNameResolver.isEntity(Person4.class));
+        assertTrue(ParameterNameResolver.isEntity(PersonWithValidAnnotations.class));
+        assertFalse(ParameterNameResolver.isEntity(PersonWithoutTableAndEntityAnnotations.class));
     }
 
     @Test
@@ -90,7 +90,7 @@ public class ParameterNameResolverTest {
 
     @Test
     public void shouldReturnJoinColumnAnnotationNameIfNameIsSpecifiedNotExplicitly() {
-        var anyField = Arrays.stream(Note2.class.getDeclaredFields())
+        var anyField = Arrays.stream(NoteWithJoinColumnAnnotationAndWithoutNameValue.class.getDeclaredFields())
                 .filter(field -> field.isAnnotationPresent(JoinColumn.class)
                         && field.getAnnotation(JoinColumn.class).name().isEmpty())
                 .findAny()
@@ -101,7 +101,7 @@ public class ParameterNameResolverTest {
 
     @Test
     public void shouldThrowAnnotationMappingExceptionWithoutJoinColumnAnnotation() {
-        var anyField = Arrays.stream(Person1.class.getDeclaredFields())
+        var anyField = Arrays.stream(PersonWithValidAnnotations.class.getDeclaredFields())
                 .filter(field -> !field.isAnnotationPresent(Column.class))
                 .findAny().orElseThrow();
 

@@ -1,9 +1,13 @@
 package org.svydovets.baseEntity;
 
 import org.svydovets.annotation.Column;
+import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
+import org.svydovets.annotation.Table;
 
-public class Person4 {
+@Entity
+@Table
+public class PersonWithoutTableAnnotationNameValue {
 
     @Id
     private Integer Id;

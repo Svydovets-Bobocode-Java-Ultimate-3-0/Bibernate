@@ -62,6 +62,22 @@ public class ParameterNameResolver {
     }
 
     /**
+     * This method helps to define name of declared <strong>entity field</strong> by name from annotations @Column or @JoinColumn
+     *
+     * @param field - field entity class annotated or @JoinColumn or annotated not as @Column
+     * @return column name value from annotations or if annotation name is empty - return field name
+     * @see Column
+     * @see JoinColumn
+     */
+    public static String resolveJoinColumnOrColumnName(Field field) {
+        log.trace("Call resolveJoinColumnOrColumnName({}) for field base entity", field);
+
+        JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
+
+        return joinColumnAnnotation != null ? resolveJoinColumnName(field) : resolveColumnName(field);
+    }
+
+    /**
      * This method helps to define join column name of declared <strong>entity field</strong> by name from annotation
      *
      * @param field - field entity class annotated or not as @JoinColumn
