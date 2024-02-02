@@ -3,7 +3,7 @@ package org.svydovets.baseEntity;
 import org.svydovets.annotation.Column;
 import org.svydovets.annotation.Id;
 
-public class Person4 {
+public class PersonWithoutTableAndEntityAnnotations {
 
     @Id
     private Integer Id;
