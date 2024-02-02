@@ -202,32 +202,7 @@ public class GenericJdbcDAO {
     private <T> T createEntityFromResultSet(Class<T> entityType, ResultSet resultSet) {
         try {
             T entity = entityType.getConstructor().newInstance();
-            try {
-                for (Field field : entityType.getDeclaredFields()) {
-                    field.setAccessible(true);
-                    if (isEntityField(field)) {
-                        var joinClazz = field.getType();
-                        var joinColumnName = ParameterNameResolver.resolveJoinColumnName(field);
-                        var joinColumnValue = resultSet.getObject(joinColumnName);
-                        var entityKey = new EntityKey<>(joinClazz, joinColumnValue);
-                        var joinEntity = loadFromDB(entityKey);
-                        field.set(entity, joinEntity);
-                    } else if (isEntityCollectionField(field)) {
-                        var joinClazz = getJoinCollectionEntityType(field);
-                        var entityFieldInJoinClazz = getJoinClazzField(entityType, joinClazz);
-                        var joinEntityId = resultSet.getObject(ParameterNameResolver.getIdFieldName(joinClazz));
-                        var lazyList = createLazyList(joinClazz, entityFieldInJoinClazz, joinEntityId);
-                        field.set(entity, lazyList);
-                    } else if (isColumnField(field)) {
-                        String columnName = ParameterNameResolver.resolveColumnName(field);
-                        field.set(entity, resultSet.getObject(columnName));
-                    }
-                }
-            } catch (Exception exception) {
-                throw new ResultSetParseException(String
-                        .format("Error parsing result set for entity of type: %s",
-                                entity.getClass().getName()), exception);
-            }
+            parseResultSetForEntity(entityType, resultSet, entity);
 
             return entity;
         } catch (Exception exception) {
@@ -236,14 +211,46 @@ public class GenericJdbcDAO {
         }
     }
 
+    private <T> void parseResultSetForEntity(Class<T> entityType, ResultSet resultSet, T entity) {
+        try {
+            for (Field field : entityType.getDeclaredFields()) {
+                Object fieldValue = parseResultSetForField(entityType, resultSet, field);
+                EntityReflectionUtils.setFieldValue(entity, field, fieldValue);
+            }
+        } catch (SQLException exception) {
+            throw new ResultSetParseException(String
+                    .format("Error parsing result set for entity of type: %s",
+                            entity.getClass().getName()), exception);
+        }
+    }
+
+    private Object parseResultSetForField(Class<?> entityType, ResultSet resultSet, Field field) throws SQLException {
+        if (isEntityField(field)) {
+            var joinClazz = field.getType();
+            var joinColumnName = ParameterNameResolver.resolveJoinColumnName(field);
+            var joinColumnValue = resultSet.getObject(joinColumnName);
+            var entityKey = new EntityKey<>(joinClazz, joinColumnValue);
+            return loadFromDB(entityKey);
+        } else if (isEntityCollectionField(field)) {
+            var joinClazz = getJoinCollectionEntityType(field);
+            var entityFieldInJoinClazz = getJoinClazzField(entityType, joinClazz);
+            var joinEntityId = resultSet.getObject(ParameterNameResolver.getIdFieldName(entityType));
+            return createLazyList(joinClazz, entityFieldInJoinClazz, joinEntityId);
+        } else if (isColumnField(field)) {
+            String columnName = ParameterNameResolver.resolveColumnName(field);
+            return resultSet.getObject(columnName);
+        }
+        return null;
+    }
+
     /**
      * method returns the one entity by the restriction field
      *
-     * @param entityType - entity class type
-     * @param field - "restriction field" of entity
+     * @param entityType  - entity class type
+     * @param field       - "restriction field" of entity
      * @param columnValue - value "restriction field" of entity
-     * @return selected entity
      * @param <T>
+     * @return selected entity
      */
     public <T> T findBy(final Class<T> entityType, final Field field, final Object columnValue) {
         log.trace("Call findBy({}, {}, {})", entityType, field, columnValue);
@@ -251,7 +258,7 @@ public class GenericJdbcDAO {
         var result = findAllBy(entityType, field, columnValue);
         if (result.size() > 1) {
             throw new DaoOperationException(String
-                    .format("The result for entity [%s] contains more than one line: %s", entityType.getName()));
+                    .format("The result for entity [%s] contains more than one line", entityType.getName()));
         }
 
         return result.get(0);
@@ -260,11 +267,11 @@ public class GenericJdbcDAO {
     /**
      * method returns the entity list by the restriction field
      *
-     * @param entityType - entity class type
-     * @param field - "restriction field" of entity
+     * @param entityType  - entity class type
+     * @param field       - "restriction field" of entity
      * @param columnValue - value "restriction field" of entity
-     * @return selected list entities
      * @param <T>
+     * @return selected list entities
      */
     public <T> List<T> findAllBy(final Class<T> entityType, final Field field, final Object columnValue) {
         log.trace("Call findAllBy({}, {}, {})", entityType, field, columnValue);
