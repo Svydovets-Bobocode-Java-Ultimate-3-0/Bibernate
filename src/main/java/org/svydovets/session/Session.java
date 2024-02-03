@@ -32,7 +32,7 @@ public class Session {
     }
 
     public TransactionManager transactionManager() {
-        return new TransactionManagerImpl(connectionHandler);
+        return new TransactionManagerImpl(connectionHandler, actionQueue);
     }
 
     public void persist(Object entity) {

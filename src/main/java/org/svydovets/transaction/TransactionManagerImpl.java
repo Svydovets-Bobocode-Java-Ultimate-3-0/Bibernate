@@ -1,6 +1,7 @@
 package org.svydovets.transaction;
 
 import org.svydovets.connectionPool.datasource.ConnectionHandler;
+import org.svydovets.session.actionQueue.executor.ActionQueue;
 
 import java.sql.SQLException;
 
@@ -13,14 +14,16 @@ public class TransactionManagerImpl implements TransactionManager {
 
     private boolean isActive;
     private final ConnectionHandler connectionHandler;
+    private final ActionQueue actionQueue;
 
     /**
      * Constructs a new {@code TransactionManagerImpl} with the specified {@link ConnectionHandler}.
      *
      * @param connectionHandler the connection handler used for managing database connections.
      */
-    public TransactionManagerImpl(ConnectionHandler connectionHandler) {
+    public TransactionManagerImpl(ConnectionHandler connectionHandler, ActionQueue actionQueue) {
         this.connectionHandler = connectionHandler;
+        this.actionQueue = actionQueue;
     }
 
     /**
@@ -32,6 +35,7 @@ public class TransactionManagerImpl implements TransactionManager {
         if (isActive) {
             throw new TransactionException("Transaction was started");
         }
+
         try {
             isActive = true;
             connectionHandler.getConnectionAttributes().setTransactionActivated(true);
@@ -50,7 +54,9 @@ public class TransactionManagerImpl implements TransactionManager {
         if (!isActive) {
             throw new TransactionException("Transaction is not started");
         }
+
         try {
+            actionQueue.performAccumulatedActions();
             connectionHandler.getConnection().commit();
             isActive = false;
             connectionHandler.getConnectionAttributes().setTransactionActivated(false);
@@ -68,6 +74,7 @@ public class TransactionManagerImpl implements TransactionManager {
         if (!isActive) {
             throw new TransactionException("Transaction is not started");
         }
+
         try {
             connectionHandler.getConnection().rollback();
             isActive = false;
