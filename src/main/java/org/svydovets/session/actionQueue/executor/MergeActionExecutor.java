@@ -11,6 +11,6 @@ public class MergeActionExecutor extends EntityActionExecutor<MergeAction> {
 
     @Override
     protected void execute(MergeAction entityAction) {
-        this.jdbcDAO.update(entityAction.getEntityEntry());
+        super.jdbcDAO.update(entityAction.getEntityEntry());
     }
 }

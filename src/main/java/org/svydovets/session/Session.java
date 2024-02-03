@@ -4,6 +4,7 @@ import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.dao.GenericJdbcDAO;
 import org.svydovets.session.actionQueue.action.MergeAction;
 import org.svydovets.session.actionQueue.action.PersistAction;
+import org.svydovets.session.actionQueue.action.RemoveAction;
 import org.svydovets.session.actionQueue.executor.ActionQueue;
 import org.svydovets.transaction.TransactionManager;
 import org.svydovets.transaction.TransactionManagerImpl;
@@ -35,8 +36,6 @@ public class Session {
     }
 
     public void persist(Object entity) {
-        Class<?> entityType = entity.getClass();
-
         PersistAction persistAction = new PersistAction(entity, true);
         actionQueue.addPersistAction(persistAction);
 
@@ -78,6 +77,16 @@ public class Session {
         return null;
     }
 
+    public void remove(Object entity) {
+        EntityKey<?> entityKey = EntityKey.of(entity);
+        if (!entitiesCache.containsKey(entityKey)) {
+            throw new IllegalArgumentException(String.format("Removing a detached entity %s", entityKey.entityType().getName()));
+        }
+
+        EntityEntry entityEntry = EntityEntry.valueOf(entityKey, entity);
+        actionQueue.addRemoveAction(new RemoveAction(entityEntry));
+    }
+
     /**
      * This method close current session. Before closing the session, the following is performed:
      * - “dirty check”,
@@ -87,10 +96,14 @@ public class Session {
     public void close() {
         performDirtyCheck();
 
-        actionQueue.performAccumulatedActions();
+        flush();
 
         entitiesCache.clear();
         entitiesSnapshots.clear();
+    }
+
+    public void flush() {
+        actionQueue.performAccumulatedActions();
     }
 
     private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
