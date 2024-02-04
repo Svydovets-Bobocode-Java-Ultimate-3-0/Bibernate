@@ -111,6 +111,17 @@ public class ParameterNameResolver {
         return resolveColumnName(EntityReflectionUtils.getIdField(entityType));
     }
 
+    public static String getVersionFieldName(Class<?> entityType) {
+        log.trace("Call getVersionFieldName({}) for  entity class", entityType);
+
+        Field versionField = EntityReflectionUtils.getVersionField(entityType);
+        if (versionField == null){
+            return "";
+        } else {
+            return resolveColumnName(versionField);
+        }
+    }
+
     /**
      * This method helps determine whether a class is marked with an annotation @Entity
      *

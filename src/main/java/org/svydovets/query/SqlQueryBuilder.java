@@ -17,6 +17,8 @@ public class SqlQueryBuilder {
 
     private static final String UPDATE_BY_ID_SQL = "update %s set %s where %s = ?";
 
+    private static final String UPDATE_OPT_LOCK_VERSION_POSTFIX = " and %s = ?";
+
     private static final String DELETE_BY_ID_SQL = "delete from %s where %s = ?";
 
     /**
@@ -70,8 +72,12 @@ public class SqlQueryBuilder {
         String tableName = ParameterNameResolver.resolveTableName(entityType);
         String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
         String updatableColumns = SqlQueryUtil.resolveUpdatableColumnsWithValues(entityType);
-
-        return String.format(UPDATE_BY_ID_SQL, tableName, updatableColumns, idColumnName);
+        String versionOptLockColumnName = ParameterNameResolver.getVersionFieldName(entityType);
+        if (versionOptLockColumnName != null && !versionOptLockColumnName.isBlank()){
+            return String.format(UPDATE_BY_ID_SQL + UPDATE_OPT_LOCK_VERSION_POSTFIX, tableName, updatableColumns, idColumnName, versionOptLockColumnName);
+        } else {
+            return String.format(UPDATE_BY_ID_SQL, tableName, updatableColumns, idColumnName);
+        }
     }
 
     /**

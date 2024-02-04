@@ -1,5 +1,6 @@
 package org.svydovets.query;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -12,6 +13,7 @@ import org.svydovets.baseEntity.PersonWithValidAnnotations;
 import org.svydovets.baseEntity.PersonWithoutTableAnnotation;
 import org.svydovets.baseEntity.PersonWithoutTableAnnotationNameValue;
 import org.svydovets.baseEntity.PersonWithoutTableAndEntityAnnotations;
+import org.svydovets.baseEntity.PersonWithVersionAnnotation;
 import org.svydovets.exception.AnnotationMappingException;
 
 import java.util.Arrays;
@@ -111,4 +113,10 @@ public class ParameterNameResolverTest {
                 .isThrownBy(() -> ParameterNameResolver.resolveJoinColumnName(anyField))
                 .withMessage(message);
     }
+
+    @Test
+    public void shouldReturnVersionColumnAnnotationFieldName() {
+        Assertions.assertEquals("version", ParameterNameResolver.getVersionFieldName(PersonWithVersionAnnotation.class));
+    }
+
 }

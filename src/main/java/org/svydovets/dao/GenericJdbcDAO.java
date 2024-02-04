@@ -155,12 +155,19 @@ public class GenericJdbcDAO {
 
             PreparedStatement updateByIdStatement = connection.prepareStatement(updateQuery);
             Field[] entityFields = EntityReflectionUtils.getUpdatableFields(entityKey.entityType());
+            int lastUpdatebleParam = entityFields.length + 1;
             for (int i = 0; i < entityFields.length; i++) {
                 entityFields[i].setAccessible(true);
-                updateByIdStatement.setObject(i + 1, entityFields[i].get(entity));
+                if (EntityReflectionUtils.isVesionOptLockField(entityFields[i])){
+                    Object incrementedVersion = EntityReflectionUtils.incrementVersionField(entityFields[i], entity);
+                    updateByIdStatement.setObject(i + 1, incrementedVersion);
+                    updateByIdStatement.setObject(lastUpdatebleParam, entityFields[i].get(entity));
+                    lastUpdatebleParam--;
+                } else {
+                    updateByIdStatement.setObject(i + 1, entityFields[i].get(entity));
+                }
             }
-
-            updateByIdStatement.setObject(entityFields.length + 1, entityKey.id());
+            updateByIdStatement.setObject(lastUpdatebleParam, entityKey.id());
 
             return updateByIdStatement;
         } catch (Exception exception) {

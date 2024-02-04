@@ -1,11 +1,6 @@
 package org.svydovets.util;
 
-import org.svydovets.annotation.Entity;
-import org.svydovets.annotation.Id;
-import org.svydovets.annotation.JoinColumn;
-import org.svydovets.annotation.ManyToOne;
-import org.svydovets.annotation.OneToMany;
-import org.svydovets.annotation.OneToOne;
+import org.svydovets.annotation.*;
 import org.svydovets.exception.AnnotationMappingException;
 import org.svydovets.exception.BibernateException;
 
@@ -15,6 +10,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 
 public class EntityReflectionUtils {
 
@@ -46,6 +42,49 @@ public class EntityReflectionUtils {
                         "Identifier is not specified for type: %s (Each entity must have field marked as '@Id')",
                         entityType.getName()))
                 );
+    }
+
+    public static Field getVersionField(Class<?> entityType) {
+        if (!entityType.isAnnotationPresent(Entity.class)) {
+            throw new AnnotationMappingException(String.format(
+                    "Not a managed type. Class must be marked as '@Entity': %s",
+                    entityType.getName())
+            );
+        }
+        List<Field> versions = Arrays.stream(entityType.getDeclaredFields())
+                .filter(field -> isVesionOptLockField(field))
+                .toList();
+        if (versions.size() > 1) {
+            throw new AnnotationMappingException(
+                    String.format("Entity '%s' has more than 1 '@Version' annotated field. Annotated fields: %s"
+                    , entityType.getName() ,versions.stream().map(Field::getName).toList()));
+        } else if (versions.size() < 1){
+            return null;
+        } else {
+            return versions.get(0);
+        }
+    }
+
+    public static Object incrementVersionField(Field field, Object entity) throws IllegalAccessException {
+        field.setAccessible(true);
+        if (field.getType().isAssignableFrom(Integer.class)){
+            return ((Integer) field.get(entity)) + 1;
+        } else if (field.getType().isAssignableFrom(Long.class)){
+            return ((Long) field.get(entity)) + 1;
+        } else if (field.getType().isAssignableFrom(int.class)) {
+            return ((int) field.get(entity)) + 1;
+        } else if (field.getType().isAssignableFrom(long.class)) {
+            return ((long) field.get(entity)) + 1;
+        }
+        else {
+            throw new AnnotationMappingException(String.format(
+                    "In entity %S not a managed type '%s' for '@Version', supported types Integer, Long, int, long",
+                    entity.getClass().getName(),  field.getType()));
+        }
+    }
+
+    public static boolean isVesionOptLockField(Field field){
+        return field.isAnnotationPresent(Version.class);
     }
 
     public static Field[] getInsertableFieldsForIdentityGenerationType(Class<?> entityType) {

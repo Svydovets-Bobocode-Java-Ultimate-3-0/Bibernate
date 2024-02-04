@@ -10,6 +10,7 @@ import org.svydovets.annotation.JoinColumn;
 import org.svydovets.annotation.ManyToOne;
 import org.svydovets.annotation.OneToMany;
 import org.svydovets.annotation.OneToOne;
+import org.svydovets.annotation.Version;
 import org.svydovets.baseEntity.Address;
 import org.svydovets.baseEntity.AddressWithoutJoinColumnAnnotation;
 import org.svydovets.baseEntity.AddressWithoutOneToOneAnnotation;
@@ -18,6 +19,8 @@ import org.svydovets.baseEntity.NoteWithoutJoinColumnAnnotation;
 import org.svydovets.baseEntity.NoteWithoutManyToOneAnnotation;
 import org.svydovets.baseEntity.Person;
 import org.svydovets.baseEntity.PersonWithValidAnnotations;
+import org.svydovets.baseEntity.PersonWithVersionAnnotation;
+import org.svydovets.baseEntity.PersonWithTwoVersionAnnotations;
 import org.svydovets.baseEntity.NotManagedPerson;
 import org.svydovets.baseEntity.PersonWithoutId;
 import org.svydovets.exception.AnnotationMappingException;
@@ -228,5 +231,39 @@ public class EntityReflectionUtilsTest {
                 .isThrownBy(() -> EntityReflectionUtils.getJoinClazzField(Note.class, Person.class))
                 .withMessage(message);
     }
+
+    @Test
+    public void shouldReturnVersionFieldWhenVersionIsSpecified() {
+        Field versionField = Arrays.stream(PersonWithVersionAnnotation.class.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Version.class))
+                .findAny().orElseThrow();
+
+        assertThat(versionField).isEqualTo(EntityReflectionUtils.getVersionField(PersonWithVersionAnnotation.class));
+    }
+
+    @Test
+    public void shouldReturnExceptionForFewVersionColumnAnnotationFieldName() {
+        assertThatExceptionOfType(AnnotationMappingException.class)
+                .isThrownBy(() -> EntityReflectionUtils.getVersionField(PersonWithTwoVersionAnnotations.class));
+    }
+
+    @Test
+    public void shouldIncrementVersionFieldWhenVersionIsSpecified() throws IllegalAccessException {
+        Integer version = Integer.valueOf(1);
+        PersonWithVersionAnnotation personWithVersion = PersonWithVersionAnnotation.builder()
+                .id(1)
+                .firstName("firstname")
+                .lastName("lastname")
+                .age(22)
+                .version(version)
+                .male("m")
+                .build();
+        Field versionField = Arrays.stream(PersonWithVersionAnnotation.class.getDeclaredFields())
+                .filter(field -> field.isAnnotationPresent(Version.class))
+                .findAny().orElseThrow();
+        assertThat(version + 1).isEqualTo(EntityReflectionUtils.incrementVersionField(versionField, personWithVersion)) ;
+    }
+
+
 
 }

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.svydovets.baseEntity.PersonWithValidAnnotations;
+import org.svydovets.baseEntity.PersonWithVersionAnnotation;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -33,6 +34,12 @@ public class SqlQueryBuilderTest {
     public void shouldReturnUpdateByIdQuery() {
         String updateByIdQuery = "update persons set age = ?, first_name = ?, last_name = ?, male = ? where id = ?";
         assertThat(updateByIdQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(PersonWithValidAnnotations.class));
+    }
+
+    @Test
+    public void shouldReturnUpdateByIdQueryWitVersionOptLock() {
+        String updateByVersionQuery = "update persons set age = ?, first_name = ?, last_name = ?, male = ?, version = ? where id = ? and version = ?";
+        assertThat(updateByVersionQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(PersonWithVersionAnnotation.class));
     }
 
     @Test
