@@ -281,7 +281,7 @@ public class GenericJdbcDAO {
         log.trace("Call findAllBy({}, {}, {})", entityType, field, columnValue);
 
         List<T> resultList = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             var selectByColumnStatement = prepareSelectStatement(connection, entityType, field, columnValue);
             ResultSet resultSet = selectByColumnStatement.executeQuery();
             while (resultSet.next()) {
