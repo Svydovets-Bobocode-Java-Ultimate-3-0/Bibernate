@@ -7,6 +7,7 @@ import org.svydovets.query.ParameterNameResolver;
 import java.lang.reflect.Field;
 import java.sql.ResultSet;
 
+@Deprecated
 public class ResultSetParser {
 
     public static final String ERROR_PARSING_RESULT_SET_FOR_ENTITY = "Error parsing result set for entity of type: %s";

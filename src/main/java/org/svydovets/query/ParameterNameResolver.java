@@ -4,7 +4,9 @@ import lombok.extern.log4j.Log4j2;
 import org.svydovets.annotation.Column;
 import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
+import org.svydovets.annotation.JoinColumn;
 import org.svydovets.annotation.Table;
+import org.svydovets.exception.AnnotationMappingException;
 import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
@@ -45,7 +47,6 @@ public class ParameterNameResolver {
      * @param field - field entity class annotated or not as @Column
      * @return column name value from annotation or if annotation name is empty - return field name
      * @see Column
-     * @see Id
      */
     public static String resolveColumnName(Field field) {
         log.trace("Call resolveColumnName({}) for field base entity", field);
@@ -58,6 +59,43 @@ public class ParameterNameResolver {
         return columnAnnotation.name().isEmpty()
                 ? field.getName()
                 : columnAnnotation.name();
+    }
+
+    /**
+     * This method helps to define name of declared <strong>entity field</strong> by name from annotations @Column or @JoinColumn
+     *
+     * @param field - field entity class annotated or @JoinColumn or annotated not as @Column
+     * @return column name value from annotations or if annotation name is empty - return field name
+     * @see Column
+     * @see JoinColumn
+     */
+    public static String resolveJoinColumnOrColumnName(Field field) {
+        log.trace("Call resolveJoinColumnOrColumnName({}) for field base entity", field);
+
+        JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
+
+        return joinColumnAnnotation != null ? resolveJoinColumnName(field) : resolveColumnName(field);
+    }
+
+    /**
+     * This method helps to define join column name of declared <strong>entity field</strong> by name from annotation
+     *
+     * @param field - field entity class annotated or not as @JoinColumn
+     * @return join column name value from annotation or if annotation name is empty - return field name
+     * @see JoinColumn
+     */
+    public static String resolveJoinColumnName(Field field) {
+        log.trace("Call resolveJoinColumnName({}) for field base entity", field);
+
+        JoinColumn joinColumnAnnotation = field.getAnnotation(JoinColumn.class);
+        if (joinColumnAnnotation == null) {
+            throw new AnnotationMappingException(String
+                    .format("Field [%s] must be marked like JoinColumn annotation", field.getName()));
+        }
+
+        return joinColumnAnnotation.name().isEmpty()
+                ? field.getName()
+                : joinColumnAnnotation.name();
     }
 
     /**
