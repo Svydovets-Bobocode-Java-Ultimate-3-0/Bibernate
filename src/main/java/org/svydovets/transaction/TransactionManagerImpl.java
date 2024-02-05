@@ -58,6 +58,7 @@ public class TransactionManagerImpl implements TransactionManager {
         try {
             actionQueue.performAccumulatedActions();
             connectionHandler.getConnection().commit();
+            connectionHandler.closeConnectionByThreadName();
             isActive = false;
             connectionHandler.getConnectionAttributes().setTransactionActivated(false);
         } catch (SQLException e) {

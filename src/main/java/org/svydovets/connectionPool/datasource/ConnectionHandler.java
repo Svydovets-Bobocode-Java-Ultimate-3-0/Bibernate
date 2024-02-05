@@ -4,7 +4,7 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * The {@code ConnectionHandler} class is responsible for managing database connections.
@@ -25,7 +25,7 @@ public class ConnectionHandler {
      */
     public ConnectionHandler(DataSource dataSource) {
         this.dataSource = dataSource;
-        connections = new WeakHashMap<>();
+        connections = new ConcurrentHashMap<>();
     }
 
     /**
@@ -50,6 +50,11 @@ public class ConnectionHandler {
         } else {
             return dataSource.getConnection();
         }
+    }
+
+    public void closeConnectionByThreadName() {
+        String threadName = Thread.currentThread().getName();
+        connections.remove(threadName);
     }
 
     /**
