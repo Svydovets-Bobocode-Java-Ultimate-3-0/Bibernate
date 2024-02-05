@@ -17,7 +17,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
 
 /**
  *
@@ -227,18 +229,18 @@ public class GenericJdbcDAO {
     }
 
     private Object parseResultSetForField(Class<?> entityType, ResultSet resultSet, Field field) throws SQLException {
-        if (isEntityField(field)) {
+        if (EntityReflectionUtils.isEntityField(field)) {
             var joinClazz = field.getType();
             var joinColumnName = ParameterNameResolver.resolveJoinColumnName(field);
             var joinColumnValue = resultSet.getObject(joinColumnName);
             var entityKey = new EntityKey<>(joinClazz, joinColumnValue);
             return loadFromDB(entityKey);
-        } else if (isEntityCollectionField(field)) {
-            var joinClazz = getJoinCollectionEntityType(field);
-            var entityFieldInJoinClazz = getJoinClazzField(entityType, joinClazz);
+        } else if (EntityReflectionUtils.isEntityCollectionField(field)) {
+            var joinClazz = EntityReflectionUtils.getJoinCollectionEntityType(field);
+            var entityFieldInJoinClazz = EntityReflectionUtils.getJoinClazzField(entityType, joinClazz);
             var joinEntityId = resultSet.getObject(ParameterNameResolver.getIdFieldName(entityType));
             return createLazyList(joinClazz, entityFieldInJoinClazz, joinEntityId);
-        } else if (isColumnField(field)) {
+        } else if (EntityReflectionUtils.isColumnField(field)) {
             String columnName = ParameterNameResolver.resolveColumnName(field);
             return resultSet.getObject(columnName);
         }
@@ -257,7 +259,7 @@ public class GenericJdbcDAO {
     public <T> T findBy(final Class<T> entityType, final Field field, final Object columnValue) {
         log.trace("Call findBy({}, {}, {})", entityType, field, columnValue);
 
-        var result = findAllBy(entityType, field, columnValue);
+        List<T> result = findAllBy(entityType, field, columnValue);
         if (result.size() > 1) {
             throw new DaoOperationException(String
                     .format("The result for entity [%s] contains more than one line", entityType.getName()));
