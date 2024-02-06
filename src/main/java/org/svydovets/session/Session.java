@@ -20,6 +20,12 @@ import static org.svydovets.util.EntityReflectionUtils.getFieldValue;
 import static org.svydovets.util.EntityReflectionUtils.isColumnField;
 import static org.svydovets.util.EntityReflectionUtils.isEntityField;
 
+/**
+ * Manages a session for interacting with the database, providing functionality
+ * for persisting, merging, and removing entities. It acts as a buffer between
+ * the application and the database, caching entities and deferring database
+ * operations to optimize performance and manage transactions.
+ */
 public class Session {
 
     private final GenericJdbcDAO jdbcDAO;
@@ -31,6 +37,12 @@ public class Session {
 
     private boolean closed;
 
+    /**
+     * Constructs a new session with the specified JDBC DAO and connection handler.
+     *
+     * @param jdbcDAO The DAO for database operations.
+     * @param connectionHandler The handler for managing database connections.
+     */
     public Session(GenericJdbcDAO jdbcDAO, ConnectionHandler connectionHandler) {
         this.jdbcDAO = jdbcDAO;
         this.connectionHandler = connectionHandler;
@@ -40,10 +52,20 @@ public class Session {
         this.closed = false;
     }
 
+    /**
+     * Returns a transaction manager for managing transactions within this session.
+     *
+     * @return A {@link TransactionManager} instance.
+     */
     public TransactionManager transactionManager() {
         return new TransactionManagerImpl(connectionHandler, actionQueue);
     }
 
+    /**
+     * Persists the given entity immediately or queues it for batch persistence.
+     *
+     * @param entity The entity to persist.
+     */
     public void persist(Object entity) {
         PersistAction persistAction = new PersistAction(entity, true);
         actionQueue.addPersistAction(persistAction);
@@ -54,11 +76,12 @@ public class Session {
     }
 
     /**
-     * This method load entity form DB by entity type and primary key
+     * Retrieves an entity by its class type and identifier from the cache or database.
      *
-     * @param entityType
-     * @param id         - entity id
-     * @param <T>        - type of entity
+     * @param entityType The class of the entity to retrieve.
+     * @param id The identifier of the entity.
+     * @param <T> The type of the entity.
+     * @return The found entity or null if not found.
      */
     public <T> T findById(Class<T> entityType, Object id) {
         checkIfOpenSession();
@@ -69,6 +92,13 @@ public class Session {
         return entityType.cast(entity);
     }
 
+    /**
+     * Merges the state of the given entity with the one in the database.
+     *
+     * @param entity The entity to merge.
+     * @param <T> The type of the entity.
+     * @return The merged entity.
+     */
     public <T> T merge(T entity) {
         EntityKey<T> entityKey = EntityKey.of(entity);
         if (entitiesCache.containsKey(entityKey)) {
@@ -88,6 +118,11 @@ public class Session {
         return null;
     }
 
+    /**
+     * Removes the specified entity from the database.
+     *
+     * @param entity The entity to remove.
+     */
     public void remove(Object entity) {
         EntityKey<?> entityKey = EntityKey.of(entity);
         if (!entitiesCache.containsKey(entityKey)) {
@@ -115,6 +150,9 @@ public class Session {
         closed = true;
     }
 
+    /**
+     * Flushes queued actions to the database, effectively applying changes.
+     */
     public void flush() {
         actionQueue.performAccumulatedActions();
     }

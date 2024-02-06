@@ -22,17 +22,32 @@ import java.util.List;
 import java.util.function.Supplier;
 
 /**
- *
+ * A generic JDBC Data Access Object (DAO) that provides common database operations.
+ * This class abstracts the boilerplate JDBC code required to interact with the database,
+ * making it easier to perform CRUD (Create, Read, Update, Delete) operations on entity classes.
  */
 @Log4j2
 public class GenericJdbcDAO {
 
     private final ConnectionHandler connectionHandler;
 
+    /**
+     * Constructs a new GenericJdbcDAO with a specified connection handler.
+     *
+     * @param connectionHandler the connection handler responsible for providing database connections
+     */
     public GenericJdbcDAO(ConnectionHandler connectionHandler) {
         this.connectionHandler = connectionHandler;
     }
 
+    /**
+     * Saves an entity to the database.
+     * This method automatically generates and executes an INSERT SQL statement based on the entity's class definition.
+     *
+     * @param entity the entity to save
+     * @return the generated key of the saved entity
+     * @throws DaoOperationException if there is an error saving the entity
+     */
     public Object saveToDB(Object entity) {
         try (Connection connection = connectionHandler.getConnection()) {
             return save(entity, connection);
@@ -41,6 +56,125 @@ public class GenericJdbcDAO {
                     "Error saving entity to the DB: %s", entity.getClass().getName()),
                     exception
             );
+        }
+    }
+
+    /**
+     * Loads an entity from the database by its identifier.
+     * This method automatically generates and executes a SELECT SQL statement to retrieve the entity.
+     *
+     * @param entityKey the key identifying the entity to load
+     * @param <T> the type parameter of the entity
+     * @return the loaded entity, or {@code null} if not found
+     * @throws DaoOperationException if there is an error loading the entity
+     */
+    public <T> T loadFromDB(EntityKey<T> entityKey) {
+        try (Connection connection = connectionHandler.getConnection()) {
+            return load(entityKey, connection);
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String.format(
+                    "Error loading entity from the DB: %s", entityKey.entityType().getName()),
+                    exception
+            );
+        }
+    }
+
+    /**
+     * Updates an existing entity in the database by its identifier.
+     * This method automatically generates and executes an UPDATE SQL statement based on the provided entity data.
+     *
+     * @param entityEntry the entity entry containing the entity to update and its identifying key
+     * @throws DaoOperationException if there is an error updating the entity
+     */
+    public void update(EntityEntry entityEntry) {
+        try (Connection connection = connectionHandler.getConnection()) {
+            performUpdate(connection, entityEntry);
+        } catch (SQLException exception) {
+            String entityName = entityEntry.entityKey().entityType().getName();
+            throw new DaoOperationException(
+                    String.format("Error updating entity: %s", entityName),
+                    exception
+            );
+        }
+    }
+
+    /**
+     * Removes an entity from the database by its identifier.
+     * This method automatically generates and executes a DELETE SQL statement for the specified entity.
+     *
+     * @param entityKey the key identifying the entity to remove
+     * @param <T> the type parameter of the entity
+     * @throws DaoOperationException if there is an error deleting the entity
+     */
+    public <T> void remove(EntityKey<T> entityKey) {
+        Class<T> entityClass = entityKey.entityType();
+
+        log.trace("Call remove({}) for entity class", entityClass);
+
+        try (Connection connection = connectionHandler.getConnection()) {
+            String deleteQuery = SqlQueryBuilder.buildDeleteByIdQuery(entityClass);
+            if (log.isInfoEnabled()) {
+                log.info("Remove by id: {}", deleteQuery);
+            }
+
+            PreparedStatement deleteByIdStatement = connection.prepareStatement(deleteQuery);
+            deleteByIdStatement.setObject(1, entityKey.id());
+            var deleteRowsCount = deleteByIdStatement.executeUpdate();
+            if (deleteRowsCount == 0) {
+                throw new DaoOperationException(String
+                        .format("Delete has not been perform for entity: %s", entityClass));
+            }
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String
+                    .format("Error delete entity: %s", entityClass), exception);
+        }
+    }
+
+    /**
+     * Returns the one entity by the restriction field
+     *
+     * @param entityType  - entity class type
+     * @param field       - "restriction field" of entity
+     * @param columnValue - value "restriction field" of entity
+     * @param <T>
+     * @return selected entity
+     */
+    public <T> T findBy(final Class<T> entityType, final Field field, final Object columnValue) {
+        log.trace("Call findBy({}, {}, {})", entityType, field, columnValue);
+
+        List<T> result = findAllBy(entityType, field, columnValue);
+        if (result.size() > 1) {
+            throw new DaoOperationException(String
+                    .format("The result for entity [%s] contains more than one line", entityType.getName()));
+        }
+
+        return result.get(0);
+    }
+
+    /**
+     * Returns the entity list by the restriction field
+     *
+     * @param entityType  - entity class type
+     * @param field       - "restriction field" of entity
+     * @param columnValue - value "restriction field" of entity
+     * @param <T>
+     * @return selected list entities
+     */
+    public <T> List<T> findAllBy(final Class<T> entityType, final Field field, final Object columnValue) {
+        log.trace("Call findAllBy({}, {}, {})", entityType, field, columnValue);
+
+        List<T> resultList = new ArrayList<>();
+        try (Connection connection = connectionHandler.getConnection()) {
+            var selectByColumnStatement = prepareSelectStatement(connection, entityType, field, columnValue);
+            ResultSet resultSet = selectByColumnStatement.executeQuery();
+            while (resultSet.next()) {
+                resultList.add(createEntityFromResultSet(entityType, resultSet));
+            }
+
+            return resultList;
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String
+                    .format("Error loading entities from the DB: %s", entityType.getName()), exception);
         }
     }
 
@@ -72,64 +206,6 @@ public class GenericJdbcDAO {
                     "Error preparing insert statement for entity: %s", entity.getClass().getName()),
                     exception
             );
-        }
-    }
-
-    public <T> T loadFromDB(EntityKey<T> entityKey) {
-        try (Connection connection = connectionHandler.getConnection()) {
-            return load(entityKey, connection);
-        } catch (SQLException exception) {
-            throw new DaoOperationException(String.format(
-                    "Error loading entity from the DB: %s", entityKey.entityType().getName()),
-                    exception
-            );
-        }
-    }
-
-    /**
-     * This method update entity by id
-     *
-     * @param entityEntry
-     */
-    public void update(EntityEntry entityEntry) {
-        try (Connection connection = connectionHandler.getConnection()) {
-            performUpdate(connection, entityEntry);
-        } catch (SQLException exception) {
-            String entityName = entityEntry.entityKey().entityType().getName();
-            throw new DaoOperationException(
-                    String.format("Error updating entity: %s", entityName),
-                    exception
-            );
-        }
-    }
-
-    /**
-     * This method remove entity by id
-     *
-     * @param entityKey
-     * @param <T>
-     */
-    public <T> void remove(EntityKey<T> entityKey) {
-        Class<T> entityClass = entityKey.entityType();
-
-        log.trace("Call remove({}) for entity class", entityClass);
-
-        try (Connection connection = connectionHandler.getConnection()) {
-            String deleteQuery = SqlQueryBuilder.buildDeleteByIdQuery(entityClass);
-            if (log.isInfoEnabled()) {
-                log.info("Remove by id: {}", deleteQuery);
-            }
-
-            PreparedStatement deleteByIdStatement = connection.prepareStatement(deleteQuery);
-            deleteByIdStatement.setObject(1, entityKey.id());
-            var deleteRowsCount = deleteByIdStatement.executeUpdate();
-            if (deleteRowsCount == 0) {
-                throw new DaoOperationException(String
-                        .format("Delete has not been perform for entity: %s", entityClass));
-            }
-        } catch (SQLException exception) {
-            throw new DaoOperationException(String
-                    .format("Error delete entity: %s", entityClass), exception);
         }
     }
 
@@ -245,54 +321,6 @@ public class GenericJdbcDAO {
             return resultSet.getObject(columnName);
         }
         return null;
-    }
-
-    /**
-     * method returns the one entity by the restriction field
-     *
-     * @param entityType  - entity class type
-     * @param field       - "restriction field" of entity
-     * @param columnValue - value "restriction field" of entity
-     * @param <T>
-     * @return selected entity
-     */
-    public <T> T findBy(final Class<T> entityType, final Field field, final Object columnValue) {
-        log.trace("Call findBy({}, {}, {})", entityType, field, columnValue);
-
-        List<T> result = findAllBy(entityType, field, columnValue);
-        if (result.size() > 1) {
-            throw new DaoOperationException(String
-                    .format("The result for entity [%s] contains more than one line", entityType.getName()));
-        }
-
-        return result.get(0);
-    }
-
-    /**
-     * method returns the entity list by the restriction field
-     *
-     * @param entityType  - entity class type
-     * @param field       - "restriction field" of entity
-     * @param columnValue - value "restriction field" of entity
-     * @param <T>
-     * @return selected list entities
-     */
-    public <T> List<T> findAllBy(final Class<T> entityType, final Field field, final Object columnValue) {
-        log.trace("Call findAllBy({}, {}, {})", entityType, field, columnValue);
-
-        List<T> resultList = new ArrayList<>();
-        try (Connection connection = connectionHandler.getConnection()) {
-            var selectByColumnStatement = prepareSelectStatement(connection, entityType, field, columnValue);
-            ResultSet resultSet = selectByColumnStatement.executeQuery();
-            while (resultSet.next()) {
-                resultList.add(createEntityFromResultSet(entityType, resultSet));
-            }
-
-            return resultList;
-        } catch (SQLException exception) {
-            throw new DaoOperationException(String
-                    .format("Error loading entities from the DB: %s", entityType.getName()), exception);
-        }
     }
 
     private PreparedStatement prepareSelectStatement(final Connection connection,
