@@ -2,6 +2,7 @@ package org.svydovets.dao;
 
 import lombok.extern.log4j.Log4j2;
 import org.svydovets.collection.LazyList;
+import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.exception.DaoOperationException;
 import org.svydovets.exception.ResultSetParseException;
 import org.svydovets.query.ParameterNameResolver;
@@ -10,7 +11,6 @@ import org.svydovets.session.EntityEntry;
 import org.svydovets.session.EntityKey;
 import org.svydovets.util.EntityReflectionUtils;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -27,14 +27,14 @@ import java.util.function.Supplier;
 @Log4j2
 public class GenericJdbcDAO {
 
-    private final DataSource dataSource;
+    private final ConnectionHandler connectionHandler;
 
-    public GenericJdbcDAO(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public GenericJdbcDAO(ConnectionHandler connectionHandler) {
+        this.connectionHandler = connectionHandler;
     }
 
     public Object saveToDB(Object entity) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             return save(entity, connection);
         } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
@@ -76,7 +76,7 @@ public class GenericJdbcDAO {
     }
 
     public <T> T loadFromDB(EntityKey<T> entityKey) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             return load(entityKey, connection);
         } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
@@ -92,7 +92,7 @@ public class GenericJdbcDAO {
      * @param entityEntry
      */
     public void update(EntityEntry entityEntry) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             performUpdate(connection, entityEntry);
         } catch (SQLException exception) {
             String entityName = entityEntry.entityKey().entityType().getName();
@@ -114,7 +114,7 @@ public class GenericJdbcDAO {
 
         log.trace("Call remove({}) for entity class", entityClass);
 
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             String deleteQuery = SqlQueryBuilder.buildDeleteByIdQuery(entityClass);
             if (log.isInfoEnabled()) {
                 log.info("Remove by id: {}", deleteQuery);
@@ -281,7 +281,7 @@ public class GenericJdbcDAO {
         log.trace("Call findAllBy({}, {}, {})", entityType, field, columnValue);
 
         List<T> resultList = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             var selectByColumnStatement = prepareSelectStatement(connection, entityType, field, columnValue);
             ResultSet resultSet = selectByColumnStatement.executeQuery();
             while (resultSet.next()) {

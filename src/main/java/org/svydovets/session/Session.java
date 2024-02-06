@@ -1,11 +1,14 @@
 package org.svydovets.session;
 
+import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.dao.GenericJdbcDAO;
 import org.svydovets.exception.SessionOperationException;
 import org.svydovets.session.actionQueue.action.MergeAction;
 import org.svydovets.session.actionQueue.action.PersistAction;
 import org.svydovets.session.actionQueue.action.RemoveAction;
 import org.svydovets.session.actionQueue.executor.ActionQueue;
+import org.svydovets.transaction.TransactionManager;
+import org.svydovets.transaction.TransactionManagerImpl;
 import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
@@ -24,15 +27,21 @@ public class Session {
     private final Map<EntityKey<?>, Object> entitiesCache;
 
     private final Map<EntityKey<?>, Object[]> entitiesSnapshots;
+    private final ConnectionHandler connectionHandler;
 
     private boolean closed;
 
-    public Session(GenericJdbcDAO jdbcDAO) {
+    public Session(GenericJdbcDAO jdbcDAO, ConnectionHandler connectionHandler) {
         this.jdbcDAO = jdbcDAO;
+        this.connectionHandler = connectionHandler;
         this.actionQueue = new ActionQueue(jdbcDAO);
         this.entitiesCache = new HashMap<>();
         this.entitiesSnapshots = new HashMap<>();
         this.closed = false;
+    }
+
+    public TransactionManager transactionManager() {
+        return new TransactionManagerImpl(connectionHandler, actionQueue);
     }
 
     public void persist(Object entity) {
