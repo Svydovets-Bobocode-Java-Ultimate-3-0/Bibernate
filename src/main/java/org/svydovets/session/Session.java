@@ -1,7 +1,14 @@
 package org.svydovets.session;
 
+import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.dao.GenericJdbcDAO;
 import org.svydovets.exception.SessionOperationException;
+import org.svydovets.session.actionQueue.action.MergeAction;
+import org.svydovets.session.actionQueue.action.PersistAction;
+import org.svydovets.session.actionQueue.action.RemoveAction;
+import org.svydovets.session.actionQueue.executor.ActionQueue;
+import org.svydovets.transaction.TransactionManager;
+import org.svydovets.transaction.TransactionManagerImpl;
 import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
@@ -10,35 +17,38 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.svydovets.util.EntityReflectionUtils.getFieldValue;
-import static org.svydovets.util.EntityReflectionUtils.getIdField;
 import static org.svydovets.util.EntityReflectionUtils.isColumnField;
-import static org.svydovets.util.EntityReflectionUtils.isEntityCollectionField;
 import static org.svydovets.util.EntityReflectionUtils.isEntityField;
 
 public class Session {
 
     private final GenericJdbcDAO jdbcDAO;
+    private final ActionQueue actionQueue;
     private final Map<EntityKey<?>, Object> entitiesCache;
 
     private final Map<EntityKey<?>, Object[]> entitiesSnapshots;
+    private final ConnectionHandler connectionHandler;
 
     private boolean closed;
 
-    public Session(GenericJdbcDAO jdbcDAO) {
+    public Session(GenericJdbcDAO jdbcDAO, ConnectionHandler connectionHandler) {
         this.jdbcDAO = jdbcDAO;
+        this.connectionHandler = connectionHandler;
+        this.actionQueue = new ActionQueue(jdbcDAO);
         this.entitiesCache = new HashMap<>();
         this.entitiesSnapshots = new HashMap<>();
         this.closed = false;
     }
 
+    public TransactionManager transactionManager() {
+        return new TransactionManagerImpl(connectionHandler, actionQueue);
+    }
+
     public void persist(Object entity) {
-        Class<?> entityType = entity.getClass();
+        PersistAction persistAction = new PersistAction(entity, true);
+        actionQueue.addPersistAction(persistAction);
 
-        Object generatedId = jdbcDAO.saveToDB(entity);
-        Field idField = getIdField(entityType);
-        EntityReflectionUtils.setFieldValue(entity, idField, generatedId);
-
-        EntityKey<?> entityKey = new EntityKey<>(entityType, generatedId);
+        EntityKey<?> entityKey = persistAction.getEntityEntry().entityKey();
         entitiesCache.put(entityKey, entity);
         saveEntitySnapshots(entityKey, entity);
     }
@@ -47,8 +57,8 @@ public class Session {
      * This method load entity form DB by entity type and primary key
      *
      * @param entityType
-     * @param id - entity id
-     * @param <T> - type of entity
+     * @param id         - entity id
+     * @param <T>        - type of entity
      */
     public <T> T findById(Class<T> entityType, Object id) {
         checkIfOpenSession();
@@ -78,20 +88,35 @@ public class Session {
         return null;
     }
 
+    public void remove(Object entity) {
+        EntityKey<?> entityKey = EntityKey.of(entity);
+        if (!entitiesCache.containsKey(entityKey)) {
+            throw new IllegalArgumentException(String.format("Removing a detached entity %s", entityKey.entityType().getName()));
+        }
+
+        EntityEntry entityEntry = EntityEntry.valueOf(entityKey, entity);
+        actionQueue.addRemoveAction(new RemoveAction(entityEntry));
+    }
+
     /**
      * This method close current session. Before closing the session, the following is performed:
-     *  - “dirty check”,
-     *  - clearing the first level cache
-     *  - clearing all snapshots.
-     *
+     * - “dirty check”,
+     * - clearing the first level cache
+     * - clearing all snapshots.
      */
     public void close() {
         performDirtyCheck();
+
+        flush();
 
         entitiesCache.clear();
         entitiesSnapshots.clear();
 
         closed = true;
+    }
+
+    public void flush() {
+        actionQueue.performAccumulatedActions();
     }
 
     private void saveEntitySnapshots(EntityKey<?> entityKey, Object entity) {
@@ -112,7 +137,8 @@ public class Session {
         entitiesCache.entrySet()
                 .stream()
                 .filter(this::hasChanged)
-                .forEach(jdbcDAO::update);
+                .map(entry -> EntityEntry.valueOf(entry.getKey(), entry.getValue()))
+                .forEach(entityEntry -> actionQueue.addMergeAction(new MergeAction(entityEntry)));
     }
 
     private boolean hasChanged(Map.Entry<EntityKey<?>, Object> entry) {

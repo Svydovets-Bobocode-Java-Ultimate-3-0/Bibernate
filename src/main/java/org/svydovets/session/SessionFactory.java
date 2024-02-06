@@ -1,11 +1,13 @@
 package org.svydovets.session;
 
 import org.svydovets.connectionPool.config.DataSourceConfig;
+import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.connectionPool.datasource.PooledDataSource;
 import org.svydovets.dao.GenericJdbcDAO;
 import org.svydovets.dao.Properties;
 import org.svydovets.exception.InvalidParameterPropertiesException;
 
+import javax.sql.DataSource;
 import java.io.FileInputStream;
 import java.io.IOException;
 
@@ -19,6 +21,7 @@ import static java.util.Objects.requireNonNull;
 public class SessionFactory {
 
     private static final String DB_CONFIG = "src/main/resources/application.properties";
+    private final ConnectionHandler connectionHandler;
     private final GenericJdbcDAO jdbcDAO;
 
     /**
@@ -34,7 +37,9 @@ public class SessionFactory {
      * @param properties The {@code Properties} object containing the database connection details.
      */
     public SessionFactory(Properties properties) {
-        this.jdbcDAO = new GenericJdbcDAO(createPooledDataSource(properties));
+        DataSource dataSource = createPooledDataSource(properties);
+        this.connectionHandler = new ConnectionHandler(dataSource);
+        this.jdbcDAO = new GenericJdbcDAO(connectionHandler);
     }
 
     /**
@@ -43,7 +48,7 @@ public class SessionFactory {
      * @return A new {@code Session} instance for interacting with the database.
      */
     public Session createSession() {
-        return new Session(jdbcDAO);
+        return new Session(jdbcDAO, connectionHandler);
     }
 
     /**

@@ -9,4 +9,12 @@ public record EntityKey<T>(Class<T> entityType, Object id) {
         Object id = EntityReflectionUtils.getEntityIdValue(entity);
         return (EntityKey<T>) new EntityKey<>(entity.getClass(), id);
     }
+
+    public static EntityKey<?> valueOf(Object entity, Object entityId) {
+        return new EntityKey<>(entity.getClass(), entityId);
+    }
+
+    public static EntityKey<?> empty() {
+        return new EntityKey<>(null, null);
+    }
 }

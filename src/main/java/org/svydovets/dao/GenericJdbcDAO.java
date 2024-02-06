@@ -2,14 +2,15 @@ package org.svydovets.dao;
 
 import lombok.extern.log4j.Log4j2;
 import org.svydovets.collection.LazyList;
+import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.exception.DaoOperationException;
 import org.svydovets.exception.ResultSetParseException;
 import org.svydovets.query.ParameterNameResolver;
 import org.svydovets.query.SqlQueryBuilder;
+import org.svydovets.session.EntityEntry;
 import org.svydovets.session.EntityKey;
 import org.svydovets.util.EntityReflectionUtils;
 
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -18,14 +19,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
-
-import static org.svydovets.util.EntityReflectionUtils.getJoinClazzField;
-import static org.svydovets.util.EntityReflectionUtils.getJoinCollectionEntityType;
-import static org.svydovets.util.EntityReflectionUtils.isColumnField;
-import static org.svydovets.util.EntityReflectionUtils.isEntityCollectionField;
-import static org.svydovets.util.EntityReflectionUtils.isEntityField;
 
 /**
  *
@@ -33,14 +27,14 @@ import static org.svydovets.util.EntityReflectionUtils.isEntityField;
 @Log4j2
 public class GenericJdbcDAO {
 
-    private final DataSource dataSource;
+    private final ConnectionHandler connectionHandler;
 
-    public GenericJdbcDAO(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public GenericJdbcDAO(ConnectionHandler connectionHandler) {
+        this.connectionHandler = connectionHandler;
     }
 
     public Object saveToDB(Object entity) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             return save(entity, connection);
         } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
@@ -82,7 +76,7 @@ public class GenericJdbcDAO {
     }
 
     public <T> T loadFromDB(EntityKey<T> entityKey) {
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             return load(entityKey, connection);
         } catch (SQLException exception) {
             throw new DaoOperationException(String.format(
@@ -95,14 +89,15 @@ public class GenericJdbcDAO {
     /**
      * This method update entity by id
      *
-     * @param keyEntityEntry
+     * @param entityEntry
      */
-    public void update(Map.Entry<EntityKey<?>, Object> keyEntityEntry) {
-        try (Connection connection = dataSource.getConnection()) {
-            performUpdate(connection, keyEntityEntry.getKey(), keyEntityEntry.getValue());
+    public void update(EntityEntry entityEntry) {
+        try (Connection connection = connectionHandler.getConnection()) {
+            performUpdate(connection, entityEntry);
         } catch (SQLException exception) {
+            String entityName = entityEntry.entityKey().entityType().getName();
             throw new DaoOperationException(
-                    String.format("Error updating entity: %s", keyEntityEntry.getKey()),
+                    String.format("Error updating entity: %s", entityName),
                     exception
             );
         }
@@ -119,7 +114,7 @@ public class GenericJdbcDAO {
 
         log.trace("Call remove({}) for entity class", entityClass);
 
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             String deleteQuery = SqlQueryBuilder.buildDeleteByIdQuery(entityClass);
             if (log.isInfoEnabled()) {
                 log.info("Remove by id: {}", deleteQuery);
@@ -138,34 +133,43 @@ public class GenericJdbcDAO {
         }
     }
 
-    private void performUpdate(Connection connection, EntityKey<?> entityKey, Object entity) throws SQLException {
-        PreparedStatement updateByIdStatement = prepareUpdateStatement(connection, entityKey, entity);
+    private void performUpdate(Connection connection, EntityEntry entityEntry) throws SQLException {
+        PreparedStatement updateByIdStatement = prepareUpdateStatement(connection, entityEntry);
         var updatedRowsCount = updateByIdStatement.executeUpdate();
         if (updatedRowsCount == 0) {
-            throw new DaoOperationException(String.format("Update has not been perform for entity: %s", entityKey.entityType().getName()));
+            String entityName = entityEntry.entityKey().entityType().getName();
+            throw new DaoOperationException(String.format("Update has not been perform for entity: %s", entityName));
         }
     }
 
-    private PreparedStatement prepareUpdateStatement(Connection connection, EntityKey<?> entityKey, Object entity) {
+    private PreparedStatement prepareUpdateStatement(Connection connection, EntityEntry entityEntry) {
         try {
-            String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityKey.entityType());
+            Class<?> entityType = entityEntry.entityKey().entityType();
+
+            String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityType);
             if (log.isInfoEnabled()) {
                 log.info("Update by id: {}", updateQuery);
             }
 
             PreparedStatement updateByIdStatement = connection.prepareStatement(updateQuery);
-            Field[] entityFields = EntityReflectionUtils.getUpdatableFields(entityKey.entityType());
+
+            Object entity = entityEntry.entity();
+            Field[] entityFields = EntityReflectionUtils.getUpdatableFields(entityType);
             for (int i = 0; i < entityFields.length; i++) {
                 entityFields[i].setAccessible(true);
                 updateByIdStatement.setObject(i + 1, entityFields[i].get(entity));
             }
 
-            updateByIdStatement.setObject(entityFields.length + 1, entityKey.id());
+            Object entityId = entityEntry.entityKey().id();
+            updateByIdStatement.setObject(entityFields.length + 1, entityId);
 
             return updateByIdStatement;
         } catch (Exception exception) {
-            throw new DaoOperationException(String
-                    .format("Error preparing update statement for entity: %s", entityKey.entityType().getName()), exception);
+            String entityName = entityEntry.entityKey().entityType().getName();
+            throw new DaoOperationException(String.format(
+                    "Error preparing update statement for entity: %s", entityName),
+                    exception
+            );
         }
     }
 
@@ -225,18 +229,18 @@ public class GenericJdbcDAO {
     }
 
     private Object parseResultSetForField(Class<?> entityType, ResultSet resultSet, Field field) throws SQLException {
-        if (isEntityField(field)) {
+        if (EntityReflectionUtils.isEntityField(field)) {
             var joinClazz = field.getType();
             var joinColumnName = ParameterNameResolver.resolveJoinColumnName(field);
             var joinColumnValue = resultSet.getObject(joinColumnName);
             var entityKey = new EntityKey<>(joinClazz, joinColumnValue);
             return loadFromDB(entityKey);
-        } else if (isEntityCollectionField(field)) {
-            var joinClazz = getJoinCollectionEntityType(field);
-            var entityFieldInJoinClazz = getJoinClazzField(entityType, joinClazz);
+        } else if (EntityReflectionUtils.isEntityCollectionField(field)) {
+            var joinClazz = EntityReflectionUtils.getJoinCollectionEntityType(field);
+            var entityFieldInJoinClazz = EntityReflectionUtils.getJoinClazzField(entityType, joinClazz);
             var joinEntityId = resultSet.getObject(ParameterNameResolver.getIdFieldName(entityType));
             return createLazyList(joinClazz, entityFieldInJoinClazz, joinEntityId);
-        } else if (isColumnField(field)) {
+        } else if (EntityReflectionUtils.isColumnField(field)) {
             String columnName = ParameterNameResolver.resolveColumnName(field);
             return resultSet.getObject(columnName);
         }
@@ -255,7 +259,7 @@ public class GenericJdbcDAO {
     public <T> T findBy(final Class<T> entityType, final Field field, final Object columnValue) {
         log.trace("Call findBy({}, {}, {})", entityType, field, columnValue);
 
-        var result = findAllBy(entityType, field, columnValue);
+        List<T> result = findAllBy(entityType, field, columnValue);
         if (result.size() > 1) {
             throw new DaoOperationException(String
                     .format("The result for entity [%s] contains more than one line", entityType.getName()));
@@ -277,7 +281,7 @@ public class GenericJdbcDAO {
         log.trace("Call findAllBy({}, {}, {})", entityType, field, columnValue);
 
         List<T> resultList = new ArrayList<>();
-        try (Connection connection = dataSource.getConnection()) {
+        try (Connection connection = connectionHandler.getConnection()) {
             var selectByColumnStatement = prepareSelectStatement(connection, entityType, field, columnValue);
             ResultSet resultSet = selectByColumnStatement.executeQuery();
             while (resultSet.next()) {
