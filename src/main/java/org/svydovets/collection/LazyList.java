@@ -15,17 +15,42 @@ import java.util.function.Supplier;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+/**
+ * A lazily loaded list implementation that defers the fetching of its contents
+ * until they are needed. This class is particularly useful for reducing initial
+ * load time and resource usage for lists whose contents are expensive to fetch.
+ *
+ * @param <T> the type of elements in this list
+ */
 @Log4j2
 public class LazyList<T> implements List<T> {
 
+    /**
+     * The supplier function that provides the list contents when required.
+     */
     private final Supplier<List<T>> listSupplier;
 
+    /**
+     * The underlying list that is populated lazily upon first access.
+     */
     private List<T> nestedList;
 
+    /**
+     * Constructs a new {@code LazyList} with the specified supplier for its contents.
+     *
+     * @param listSupplier a {@code Supplier<List<T>>} that will provide the contents
+     *                     of the list when needed.
+     */
     public LazyList(Supplier<List<T>> listSupplier) {
         this.listSupplier = listSupplier;
     }
 
+    /**
+     * Returns the underlying list, fetching its contents from the supplier if it has
+     * not already been initialized.
+     *
+     * @return the nested list with its contents
+     */
     public List<T> getNestedList() {
         if (nestedList == null) {
             log.trace("lazy load list");

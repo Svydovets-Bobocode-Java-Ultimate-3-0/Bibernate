@@ -2,6 +2,11 @@ package org.svydovets.session.actionQueue.action;
 
 import org.svydovets.session.EntityEntry;
 
+/**
+ * Abstract base class for actions related to entities, such as persisting, merging, or removing.
+ * It defines common properties and functionality that all entity actions share, including
+ * the entity entry and action priority.
+ */
 public abstract class EntityAction {
 
     protected EntityEntry entityEntry;
