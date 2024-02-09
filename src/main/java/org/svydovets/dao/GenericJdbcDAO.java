@@ -29,6 +29,8 @@ import java.util.function.Supplier;
 @Log4j2
 public class GenericJdbcDAO {
 
+    public static final String THE_RESULT_FOR_ENTITY_CONTAINS_MORE_THAN_ONE_LINE = "The result for entity [%s] contains more than one line";
+    public static final String ERROR_LOADING_ENTITIES_FROM_THE_DB = "Error loading entities from the DB: %s";
     private final ConnectionHandler connectionHandler;
 
     /**
@@ -145,7 +147,7 @@ public class GenericJdbcDAO {
         List<T> result = findAllBy(entityType, field, columnValue);
         if (result.size() > 1) {
             throw new DaoOperationException(String
-                    .format("The result for entity [%s] contains more than one line", entityType.getName()));
+                    .format(THE_RESULT_FOR_ENTITY_CONTAINS_MORE_THAN_ONE_LINE, entityType.getName()));
         }
 
         return result.get(0);
@@ -174,7 +176,55 @@ public class GenericJdbcDAO {
             return resultList;
         } catch (SQLException exception) {
             throw new DaoOperationException(String
-                    .format("Error loading entities from the DB: %s", entityType.getName()), exception);
+                    .format(ERROR_LOADING_ENTITIES_FROM_THE_DB, entityType.getName()), exception);
+        }
+    }
+
+    /**
+     * Returns a single entity by native query, base entity and values
+     *
+     * @param query  - native query
+     * @param entityType  - entity class type
+     * @param columnValues - values for query
+     * @param <T>
+     * @return single entity
+     */
+    public <T> T nativeQueryBy(final String query, final Class<T> entityType, final Object[] columnValues) {
+        log.trace("Call nativeQueryBy({}, {}, {})", query, entityType, columnValues);
+
+        List<T> result = nativeQueryAllBy(query, entityType, columnValues);
+        if (result.size() > 1) {
+            throw new DaoOperationException(String
+                    .format(THE_RESULT_FOR_ENTITY_CONTAINS_MORE_THAN_ONE_LINE, entityType.getName()));
+        }
+
+        return result.get(0);
+    }
+
+    /**
+     * Returns a list of entities by native query, base entity and values
+     *
+     * @param query  - native query
+     * @param entityType  - entity class type
+     * @param columnValues - values for query
+     * @param <T>
+     * @return list entities
+     */
+    public <T> List<T> nativeQueryAllBy(final String query, final Class<T> entityType, final Object[] columnValues) {
+        log.trace("Call nativeQueryAllBy({}, {}, {})", query, entityType, columnValues);
+
+        try (Connection connection = connectionHandler.getConnection()) {
+            final List<T> resultList = new ArrayList<>();
+            final var selectByColumnStatement = prepareNativeQueryStatement(connection, query, columnValues);
+            ResultSet resultSet = selectByColumnStatement.executeQuery();
+            while (resultSet.next()) {
+                resultList.add(createEntityFromResultSet(entityType, resultSet));
+            }
+
+            return resultList;
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String
+                    .format(ERROR_LOADING_ENTITIES_FROM_THE_DB, entityType.getName()), exception);
         }
     }
 
@@ -350,6 +400,21 @@ public class GenericJdbcDAO {
         Supplier<List<T>> listSupplier = () -> findAllBy(joinEntityType, entityFieldInJoinClazz, entityId);
 
         return new LazyList<>(listSupplier);
+    }
+
+    private PreparedStatement prepareNativeQueryStatement(final Connection connection,
+                                                          final String query,
+                                                          final Object[] columnValues) {
+        try {
+            PreparedStatement selectByColumnStatement = connection.prepareStatement(query);
+            for (int i = 0; i < columnValues.length - 1; i++) {
+                selectByColumnStatement.setObject(i + 1, columnValues[i]);
+            }
+
+            return selectByColumnStatement;
+        } catch (SQLException exception) {
+            throw new DaoOperationException(String.format("Error preparing native query: %s", query), exception);
+        }
     }
 
 }
