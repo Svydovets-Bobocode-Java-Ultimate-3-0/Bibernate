@@ -13,8 +13,10 @@ import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static org.svydovets.util.EntityReflectionUtils.getFieldValue;
 import static org.svydovets.util.EntityReflectionUtils.isColumnField;
@@ -90,6 +92,72 @@ public class Session {
         Object entity = entitiesCache.computeIfAbsent(entityKey, jdbcDAO::loadFromDB);
         saveEntitySnapshots(entityKey, entity);
         return entityType.cast(entity);
+    }
+
+    /**
+     * Retrieves an entity by its class type and identifier from the cache or database.
+     *
+     * @param entityType The class of the entity to retrieve.
+     * @param field The entity field.
+     * @param columnValue The entity field value.
+     * @param <T> The type of the entity.
+     * @return The found entity or null if not found.
+     */
+    public <T> T findBy(final Class<T> entityType, final Field field, final Object columnValue) {
+        checkIfOpenSession();
+
+        T entity = jdbcDAO.findBy(entityType, field, columnValue);
+
+        return entityType.cast(computeIfAbsent(entity));
+    }
+
+
+    /**
+     * Retrieves list entities by its class type and identifier from the cache or database.
+     *
+     * @param entityType The class of the entity to retrieve.
+     * @param field The entity field.
+     * @param columnValue The entity field value.
+     * @param <T> The type of the entity.
+     * @return The found list entities or null if not found.
+     */
+    public <T> List<T> findAllBy(final Class<T> entityType, final Field field, final Object columnValue) {
+        checkIfOpenSession();
+        List<T> entities = jdbcDAO.findAllBy(entityType, field, columnValue);
+
+        return entities.stream().map(ent -> entityType.cast(computeIfAbsent(ent))).collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieves an entity by its class type and identifier from the cache or database.
+     *
+     * @param entityType The class of the entity to retrieve.
+     * @param query The native query.
+     * @param columnValues The array of entity field values.
+     * @param <T> The type of the entity.
+     * @return The found entity or null if not found.
+     */
+    public <T> T nativeQueryBy(final String query, final Class<T> entityType, final Object[] columnValues) {
+        checkIfOpenSession();
+        T entity = jdbcDAO.nativeQueryBy(query, entityType, columnValues);
+
+        return entityType.cast(computeIfAbsent(entity));
+    }
+
+    /**
+     * Retrieves list entities by its class type and identifier from the cache or database.
+     *
+     * @param entityType The class of the entity to retrieve.
+     * @param query The native query.
+     * @param columnValues The array of entity field values.
+     * @param <T> The type of the entity.
+     * @return The found list entities or null if not found.
+     */
+    public <T> List<T> nativeQueryAllBy(final String query, final Class<T> entityType, final Object[] columnValues) {
+        checkIfOpenSession();
+        List<T> entities = jdbcDAO.nativeQueryAllBy(query, entityType, columnValues);
+
+        return entities.stream().map(ent -> entityType.cast(computeIfAbsent(ent))).collect(Collectors.toList());
     }
 
     /**
@@ -210,5 +278,17 @@ public class Session {
         if (closed) {
             throw new SessionOperationException("Current session is closed");
         }
+    }
+
+    private Object computeIfAbsent(final Object entity) {
+        EntityKey<?> entityKey = EntityKey.of(entity);
+        if (entitiesCache.containsKey(entityKey)) {
+            return entitiesCache.get(entityKey);
+        }
+
+        entitiesCache.put(entityKey, entity);
+        saveEntitySnapshots(entityKey, entity);
+
+        return entity;
     }
 }
