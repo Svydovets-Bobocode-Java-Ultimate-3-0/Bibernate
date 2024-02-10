@@ -2,6 +2,8 @@
 
 <img src="./img/bibernate-logo.png" alt="bibernate">
 
+Bibernate is a simple version of Object-Relational Mapping (ORM) that allows working with data in an Object-Oriented manner. The premise behind Bibernate is that a user can store, fetch, change, and remove entities and the ORM library takes care of the required SQL queries to perform corresponding operations in the database.
+
 # Requirements
 
 - **Java**: Version 17.
