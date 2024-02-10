@@ -1,5 +1,7 @@
 # Bibernate
 
+<img src="./img/bibernate-logo.png" alt="bibernate">
+
 # Requirements
 
 - **Java**: Version 17.
