@@ -7,11 +7,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.mockito.Mockito;
 import org.svydovets.baseEntity.PersonSessionTest;
+import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.dao.GenericJdbcDAO;
 import org.svydovets.util.EntityReflectionUtils;
 import org.testcontainers.shaded.org.apache.commons.lang3.RandomStringUtils;
 
 import java.lang.reflect.Field;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -28,13 +31,14 @@ class SessionTest {
     private GenericJdbcDAO mockJdbcDAO;
     private final Map<EntityKey<?>, Object> entitiesCacheExpected = new HashMap<>();
     private final Map<EntityKey<?>, Object[]> entitiesSnapshotsExpected = new HashMap<>();
-
     private final AtomicInteger personIdSequence = new AtomicInteger(0);
 
     @BeforeEach
-    public void initData() {
+    public void initData() throws SQLException {
         mockJdbcDAO = Mockito.mock(GenericJdbcDAO.class);
-        sessionTestable = new Session(mockJdbcDAO);
+        ConnectionHandler connectionHandler = Mockito.mock(ConnectionHandler.class);
+        sessionTestable = new Session(mockJdbcDAO, connectionHandler);
+        Mockito.when(connectionHandler.getConnection()).thenReturn(Mockito.mock(Connection.class));
     }
 
     @AfterEach
