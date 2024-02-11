@@ -1,6 +1,7 @@
 package org.svydovets.util;
 
 import org.svydovets.query.ParameterNameResolver;
+import org.svydovets.query.PessimisticLockStrategy;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -12,6 +13,9 @@ import java.util.stream.Collectors;
  * based on annotations and field types within the entity classes.
  */
 public class SqlQueryUtil {
+
+    private static final String POSTFIX_LOCK_FOR_SHARE = "for share";
+    private static final String POSTFIX_LOCK_FOR_UPDATE = " for update";
 
     /**
      * Generates a comma-separated list of column names for use in an SQL INSERT statement.
@@ -64,5 +68,13 @@ public class SqlQueryUtil {
         }
 
         return updateBuilder.toString();
+    }
+
+    public static String pessimisticLockBuildPostfixQuery(String sql, PessimisticLockStrategy lock){
+        return switch (lock){
+            case ENABLE_PESSIMISTIC_READ -> sql + POSTFIX_LOCK_FOR_UPDATE;
+            case ENABLE_PESSIMISTIC_WRITE -> sql + " " + POSTFIX_LOCK_FOR_SHARE;
+            case DISABLED -> sql;
+        };
     }
 }
