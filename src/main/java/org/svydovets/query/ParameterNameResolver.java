@@ -10,6 +10,9 @@ import org.svydovets.exception.AnnotationMappingException;
 import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Class helper for resolving names of table and column
@@ -133,5 +136,18 @@ public class ParameterNameResolver {
         log.trace("Call isEntity({}) for  entity class", entityType);
 
         return entityType.isAnnotationPresent(Entity.class);
+    }
+
+
+    /**
+     * This method returns a map with dependencies of the field name and column name
+     *
+     * @param entityType
+     * @return map there key - field name, value - column name
+     */
+    public static Map<String, String> getColumnNameByFieldNameMap(Class<?> entityType) {
+        return Arrays.stream(entityType.getDeclaredFields())
+                .filter(field -> !EntityReflectionUtils.isEntityCollectionField(field))
+                .collect(Collectors.toMap(Field::getName, ParameterNameResolver::resolveJoinColumnOrColumnName));
     }
 }
