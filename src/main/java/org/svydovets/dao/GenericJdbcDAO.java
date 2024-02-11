@@ -308,36 +308,6 @@ public class GenericJdbcDAO {
         }
     }
 
-//    private PreparedStatement prepareUpdateStatement(Connection connection, EntityKey<?> entityKey, Object entity) {
-//        try {
-//            String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityKey.entityType());
-//            if (log.isInfoEnabled()) {
-//                log.info("Update by id: {}", updateQuery);
-//            }
-//
-//            PreparedStatement updateByIdStatement = connection.prepareStatement(updateQuery);
-//            Field[] entityFields = EntityReflectionUtils.getUpdatableFields(entityKey.entityType());
-//            int lastUpdatebleParam = entityFields.length + 1;
-//            for (int i = 0; i < entityFields.length; i++) {
-//                entityFields[i].setAccessible(true);
-//                if (EntityReflectionUtils.isVesionOptLockField(entityFields[i])){
-//                    Object incrementedVersion = EntityReflectionUtils.incrementVersionField(entityFields[i], entity);
-//                    updateByIdStatement.setObject(i + 1, incrementedVersion);
-//                    updateByIdStatement.setObject(lastUpdatebleParam, entityFields[i].get(entity));
-//                    lastUpdatebleParam--;
-//                } else {
-//                    updateByIdStatement.setObject(i + 1, entityFields[i].get(entity));
-//                }
-//            }
-//            updateByIdStatement.setObject(lastUpdatebleParam, entityKey.id());
-//
-//            return updateByIdStatement;
-//        } catch (Exception exception) {
-//            throw new DaoOperationException(String
-//                    .format("Error preparing update statement for entity: %s", entityKey.entityType().getName()), exception);
-//        }
-//    }
-
     private <T> T load(EntityKey<T> entityKey, Connection connection) throws SQLException {
         PreparedStatement selectByIdStatement = prepareSelectStatement(entityKey, connection);
         ResultSet resultSet = selectByIdStatement.executeQuery();
