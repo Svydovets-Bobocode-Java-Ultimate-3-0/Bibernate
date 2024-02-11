@@ -36,10 +36,9 @@ import java.util.stream.Collectors;
  *
  * <p>Example #2
  * <blockquote><pre>
- * final String jpQuery = "select p from Person p
- *                         where p.Note.id = :noteId";
- * QueryManager<Person> queryManager = QueryManager.of(jpQuery, Person.class);
- * queryManager.setParameters("noteId", 2);
+ * final String jpQuery = "select n from Note n where n.Person.id = :personId";
+ * QueryManager<Person> queryManager = QueryManager.of(jpQuery, Note.class);
+ * queryManager.setParameters("personId", 1L);
  * String nativeQuery = queryManager.toSqlString();
  * Object[] parameters = queryManager.getParameters();
  * </pre></blockquote>
