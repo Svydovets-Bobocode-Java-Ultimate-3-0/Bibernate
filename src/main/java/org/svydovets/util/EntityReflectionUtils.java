@@ -1,6 +1,12 @@
 package org.svydovets.util;
 
-import org.svydovets.annotation.*;
+import org.svydovets.annotation.Entity;
+import org.svydovets.annotation.Id;
+import org.svydovets.annotation.JoinColumn;
+import org.svydovets.annotation.ManyToOne;
+import org.svydovets.annotation.OneToMany;
+import org.svydovets.annotation.OneToOne;
+import org.svydovets.annotation.Version;
 import org.svydovets.exception.AnnotationMappingException;
 import org.svydovets.exception.BibernateException;
 
@@ -242,6 +248,18 @@ public class EntityReflectionUtils {
         }
 
         return isEntityAnnotation;
+    }
+
+    /**
+     * Returns all fields that represent an entity relationship (ManyToOne or OneToOne with JoinColumn).
+     *
+     * @param entityType The class of the entity.
+     * @return List fields represents an entity relationship.
+     */
+    public static List<Field> getEntityFields(Class<?> entityType) {
+        return Arrays.stream(entityType.getDeclaredFields())
+                .filter(EntityReflectionUtils::isEntityField)
+                .toList();
     }
 
     /**

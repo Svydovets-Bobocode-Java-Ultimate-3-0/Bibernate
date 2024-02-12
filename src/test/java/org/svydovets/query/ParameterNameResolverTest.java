@@ -18,7 +18,6 @@ import org.svydovets.baseEntity.PersonWithVersionAnnotation;
 import org.svydovets.exception.AnnotationMappingException;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -124,14 +123,22 @@ public class ParameterNameResolverTest {
 
 
     @Test
-    public void shouldReturnMapColumnNameByFieldName() {
+    public void shouldReturnMapColumnNameByFieldNameForSimpleColumn() {
         final Map<String, String> columnNameByFieldNameMap = ParameterNameResolver
-                .getColumnNameByFieldNameMap(Person.class);
+                .getColumnNameByFieldNameForColumnFielsMap(Person.class);
         assertThat(5).isEqualTo(columnNameByFieldNameMap.size());
         assertThat("id").isEqualTo(columnNameByFieldNameMap.get("id"));
         assertThat("first_name").isEqualTo(columnNameByFieldNameMap.get("firstName"));
         assertThat("last_name").isEqualTo(columnNameByFieldNameMap.get("lastName"));
         assertThat("age").isEqualTo(columnNameByFieldNameMap.get("age"));
         assertThat("male").isEqualTo(columnNameByFieldNameMap.get("male"));
+    }
+
+    @Test
+    public void shouldReturnMapColumnNameByFieldNameForEntityColumn() {
+        final Map<String, String> columnNameByFieldNameMap = ParameterNameResolver
+                .getColumnNameByFieldNameForEntityFielsMap(Note.class);
+        assertThat(1).isEqualTo(columnNameByFieldNameMap.size());
+        assertThat("person_id").isEqualTo(columnNameByFieldNameMap.get("person.id"));
     }
 }

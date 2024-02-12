@@ -140,14 +140,32 @@ public class ParameterNameResolver {
 
 
     /**
-     * This method returns a map with dependencies of the field name and column name
+     * This method returns a map with dependencies of the field name and column name for simple column
      *
      * @param entityType
      * @return map there key - field name, value - column name
      */
-    public static Map<String, String> getColumnNameByFieldNameMap(Class<?> entityType) {
+    public static Map<String, String> getColumnNameByFieldNameForColumnFielsMap(Class<?> entityType) {
         return Arrays.stream(entityType.getDeclaredFields())
-                .filter(field -> !EntityReflectionUtils.isEntityCollectionField(field))
-                .collect(Collectors.toMap(Field::getName, ParameterNameResolver::resolveJoinColumnOrColumnName));
+                .filter(EntityReflectionUtils::isColumnField)
+                .collect(Collectors.toMap(Field::getName, ParameterNameResolver::resolveColumnName));
+    }
+
+    /**
+     * This method returns a map with dependencies of the field name and column name for entity column
+     *
+     * @param entityType
+     * @return map there key - field name, value - column name
+     */
+    public static Map<String, String> getColumnNameByFieldNameForEntityFielsMap(Class<?> entityType) {
+        return Arrays.stream(entityType.getDeclaredFields())
+                .filter(EntityReflectionUtils::isEntityField)
+                .collect(Collectors.toMap(ParameterNameResolver::getEntityFieldNativeName,
+                        ParameterNameResolver::resolveJoinColumnName));
+    }
+
+    private static String getEntityFieldNativeName(final Field field) {
+        String idFieldName = ParameterNameResolver.getIdFieldName(field.getType());
+        return field.getName() + "." + idFieldName;
     }
 }

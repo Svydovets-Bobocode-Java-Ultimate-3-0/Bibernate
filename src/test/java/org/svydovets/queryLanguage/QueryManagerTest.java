@@ -3,7 +3,10 @@ package org.svydovets.queryLanguage;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.svydovets.baseEntity.Note;
 import org.svydovets.baseEntity.Person;
+
+import java.nio.channels.NotYetBoundException;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
@@ -13,7 +16,7 @@ public class QueryManagerTest {
     @Test
     public void shouldReturnSelectNativeQueryById() {
         final String jpQuery = "select p from Person p where id = :id";
-        final String expectedQuery = "select p from persons p where id = ?";
+        final String expectedQuery = "select * from persons p where id = ?";
         QueryManager<Person> queryManager = QueryManager.of(jpQuery, Person.class);
         queryManager.setParameters("id", 1L);
 
@@ -28,7 +31,7 @@ public class QueryManagerTest {
     @Test
     public void shouldReturnSelectNativeQueryByColumns() {
         final String jpQuery = "select p from Person p where p.firstName = :firstName and p.lastName = :lastName and p.age = :age";
-        final String expectedQuery = "select p from persons p where p.first_name = ? and p.last_name = ? and p.age = ?";
+        final String expectedQuery = "select * from persons p where p.first_name = ? and p.last_name = ? and p.age = ?";
         QueryManager<Person> queryManager = QueryManager.of(jpQuery, Person.class);
         queryManager.setParameters("lastName", "lastName");
         queryManager.setParameters("age", 20);
@@ -178,5 +181,24 @@ public class QueryManagerTest {
         assertThat("lastName").isEqualTo(parameters[1]);
         assertThat(20).isEqualTo(parameters[2]);
         assertThat("M").isEqualTo(parameters[3]);
+    }
+
+    @Test
+    public void shouldReturnSelectNativeQueryWithLeftJoinByColumns() {
+        final String jpQuery = "select n from Note n where n.Person.id = :personId";
+        QueryManager<Note> queryManager = QueryManager.of(jpQuery, Note.class);
+        queryManager.setParameters("personId", 1L);
+
+        final String expectedQuery = "select * from notes n "
+                + "left join persons join_0 on join_0.id = n.person_id "
+                + "where n.person_id = ?";
+        String sqlString = queryManager.toSqlString();
+        assertThat(expectedQuery).isEqualToIgnoringCase(sqlString);
+    }
+
+    @Test
+    public void shouldReturnEntityTypeFromQueryManager() {
+        QueryManager<Note> queryManager = new QueryManager<>(Note.class);
+        assertThat(Note.class).isEqualTo(queryManager.getEntityType());
     }
 }
