@@ -151,41 +151,16 @@ public class QueryManager<T> {
         final Set<String> columnNameByFieldNameForEntityKeys = columnNameByFieldNameForEntityMap.keySet();
         List<String> nativeQueryList = arrQuery.stream()
                 .map(element -> getValueSqlSubqueryString(element, keyParams))
-                .map(element -> {
-                    String columnName = replace(element);
-                    Optional<String> fieldNameOptional = getNameSqlSubqueryString(fieldNames, columnName);
-                    if (fieldNameOptional.isEmpty()) {
-                        return element;
-                    }
-
-                    String nativeColumnName = columnNameByFieldNameMap.get(fieldNameOptional.get());
-
-                    return element.replace(fieldNameOptional.get(), nativeColumnName);
-                })
-                .map(element -> {
-                    String columnName = replace(element);
-                    Optional<String> fieldNameOptional = getNameSqlSubqueryString(columnNameByFieldNameForEntityKeys, columnName);
-                    if (fieldNameOptional.isEmpty()) {
-                        return element;
-                    }
-
-                    String nativeColumnName = columnNameByFieldNameForEntityMap.get(fieldNameOptional.get().toLowerCase());
-
-                    return element.toLowerCase().replace(fieldNameOptional.get().toLowerCase(), nativeColumnName);
-                })
+                .map(element -> getColumnNameFromFieldName(element, fieldNames, columnNameByFieldNameMap))
+                .map(element -> getColumnNameByFieldNameFromMap(element,
+                        columnNameByFieldNameForEntityKeys, columnNameByFieldNameForEntityMap))
                 .collect(Collectors.toList());
 
         nativeQueryList.set(getIndexTableName(nativeQueryList), tableName);
         if (isSelectQuery()) {
             if (!joinQueryList.isEmpty()) {
                 nativeQueryList = nativeQueryList.stream()
-                        .map(item -> {
-                            if (item.equalsIgnoreCase("WHERE")) {
-                                return String.join(" ", joinQueryList) + " " + item;
-                            }
-
-                            return item;
-                        })
+                        .map(this::getWhereSqlSubString)
                         .collect(Collectors.toList());
             }
 
@@ -193,6 +168,42 @@ public class QueryManager<T> {
         }
 
         return String.join(" ", nativeQueryList);
+    }
+
+    private String getWhereSqlSubString(String item) {
+        if (item.equalsIgnoreCase("WHERE")) {
+            return String.join(" ", joinQueryList) + " " + item;
+        }
+
+        return item;
+    }
+
+    private String getColumnNameByFieldNameFromMap(String element,
+                                                   Set<String> columnNameByFieldNameForEntityKeys,
+                                                   Map<String, String> columnNameByFieldNameForEntityMap) {
+        String columnName = replace(element);
+        Optional<String> fieldNameOptional = getNameSqlSubqueryString(columnNameByFieldNameForEntityKeys, columnName);
+        if (fieldNameOptional.isEmpty()) {
+            return element;
+        }
+
+        String nativeColumnName = columnNameByFieldNameForEntityMap.get(fieldNameOptional.get().toLowerCase());
+
+        return element.toLowerCase().replace(fieldNameOptional.get().toLowerCase(), nativeColumnName);
+    }
+
+    private String getColumnNameFromFieldName(String element,
+                                              Set<String> fieldNames,
+                                              Map<String, String> columnNameByFieldNameMap) {
+        String columnName = replace(element);
+        Optional<String> fieldNameOptional = getNameSqlSubqueryString(fieldNames, columnName);
+        if (fieldNameOptional.isEmpty()) {
+            return element;
+        }
+
+        String nativeColumnName = columnNameByFieldNameMap.get(fieldNameOptional.get());
+
+        return element.replace(fieldNameOptional.get(), nativeColumnName);
     }
 
     private String getValueSqlSubqueryString(String element, Set<String> keyParams) {

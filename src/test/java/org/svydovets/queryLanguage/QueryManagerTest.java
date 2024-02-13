@@ -6,8 +6,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.svydovets.baseEntity.Note;
 import org.svydovets.baseEntity.Person;
 
-import java.nio.channels.NotYetBoundException;
-
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
