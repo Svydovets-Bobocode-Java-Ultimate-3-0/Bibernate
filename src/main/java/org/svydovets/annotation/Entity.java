@@ -32,7 +32,6 @@ import java.lang.annotation.Target;
  *     // fields, constructors, methods
  * }
  * }</pre>
- *
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

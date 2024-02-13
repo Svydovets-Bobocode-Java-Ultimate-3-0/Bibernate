@@ -5,7 +5,7 @@ package org.svydovets.exception;
  * This exception is typically thrown when there are problems related to processing or
  * interpreting annotations used to define entity mappings, such as {@code @Entity},
  * {@code @Id}, or relationship annotations.
- *
+ * <p>
  * Examples of scenarios where this exception might be thrown include missing required
  * annotations on an entity class, incorrect configuration of relationship mappings, or
  * attempting to use unsupported annotations.

@@ -7,9 +7,9 @@ import org.svydovets.util.EntityReflectionUtils;
  * This record is utilized within a persistence context to uniquely identify, track, and manage
  * entities, especially for operations like fetching, updating, and deleting entities in a database.
  *
- * @param <T> the type of the entity this key represents
+ * @param <T>        the type of the entity this key represents
  * @param entityType the class of the entity
- * @param id the unique identifier of the entity
+ * @param id         the unique identifier of the entity
  */
 public record EntityKey<T>(Class<T> entityType, Object id) {
 
@@ -18,7 +18,7 @@ public record EntityKey<T>(Class<T> entityType, Object id) {
      * using reflection utilities. This method is useful for quickly obtaining an entity's
      * key when only the entity instance is available.
      *
-     * @param <T> the type of the entity
+     * @param <T>    the type of the entity
      * @param entity the entity instance
      * @return an {@code EntityKey<T>} representing the entity's unique key
      */
@@ -33,7 +33,7 @@ public record EntityKey<T>(Class<T> entityType, Object id) {
      * This method allows for explicit creation of an entity key when both the entity
      * and its identifier are known.
      *
-     * @param entity the entity object
+     * @param entity   the entity object
      * @param entityId the identifier of the entity
      * @return an {@code EntityKey} representing the unique key of the entity
      */

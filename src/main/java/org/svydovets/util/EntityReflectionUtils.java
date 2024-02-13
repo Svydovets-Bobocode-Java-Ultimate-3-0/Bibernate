@@ -1,6 +1,12 @@
 package org.svydovets.util;
 
-import org.svydovets.annotation.*;
+import org.svydovets.annotation.Entity;
+import org.svydovets.annotation.Id;
+import org.svydovets.annotation.JoinColumn;
+import org.svydovets.annotation.ManyToOne;
+import org.svydovets.annotation.OneToMany;
+import org.svydovets.annotation.OneToOne;
+import org.svydovets.annotation.Version;
 import org.svydovets.exception.AnnotationMappingException;
 import org.svydovets.exception.BibernateException;
 
@@ -96,8 +102,8 @@ public class EntityReflectionUtils {
         if (versions.size() > 1) {
             throw new AnnotationMappingException(
                     String.format("Entity '%s' has more than 1 '@Version' annotated field. Annotated fields: %s"
-                            , entityType.getName() ,versions.stream().map(Field::getName).toList()));
-        } else if (versions.size() < 1){
+                            , entityType.getName(), versions.stream().map(Field::getName).toList()));
+        } else if (versions.size() < 1) {
             return null;
         } else {
             return versions.get(0);
@@ -106,32 +112,31 @@ public class EntityReflectionUtils {
 
     public static Object incrementVersionField(Field field, Object entity) throws IllegalAccessException {
         field.setAccessible(true);
-        if (field.getType().isAssignableFrom(Integer.class)){
+        if (field.getType().isAssignableFrom(Integer.class)) {
             return ((Integer) field.get(entity)) + 1;
-        } else if (field.getType().isAssignableFrom(Long.class)){
+        } else if (field.getType().isAssignableFrom(Long.class)) {
             return ((Long) field.get(entity)) + 1;
         } else if (field.getType().isAssignableFrom(int.class)) {
             return ((int) field.get(entity)) + 1;
         } else if (field.getType().isAssignableFrom(long.class)) {
             return ((long) field.get(entity)) + 1;
-        }
-        else {
+        } else {
             throw new AnnotationMappingException(String.format(
                     "In entity %S not a managed type '%s' for '@Version', supported types Integer, Long, int, long",
-                    entity.getClass().getName(),  field.getType()));
+                    entity.getClass().getName(), field.getType()));
         }
     }
 
-    public static boolean isVesionOptLockField(Field field){
+    public static boolean isVesionOptLockField(Field field) {
         return field.isAnnotationPresent(Version.class);
     }
 
     /**
      * Sets the value of a field for a given entity object.
      *
-     * @param entity The target entity object.
+     * @param entity      The target entity object.
      * @param entityField The field to set the value for.
-     * @param value The value to set.
+     * @param value       The value to set.
      * @throws BibernateException if an IllegalAccessException occurs.
      */
     public static void setFieldValue(Object entity, Field entityField, Object value) {
@@ -150,7 +155,7 @@ public class EntityReflectionUtils {
     /**
      * Retrieves the value of a field from a given entity object.
      *
-     * @param entity The entity object.
+     * @param entity      The entity object.
      * @param entityField The field to retrieve the value from.
      * @return The value of the field.
      * @throws BibernateException if an IllegalAccessException occurs.
@@ -171,7 +176,7 @@ public class EntityReflectionUtils {
             }
 
             throw new BibernateException(String.format("Invalid relation for field [%s] of entity [%s]",
-                            entityField.getName(), entity.getClass().getName()));
+                    entityField.getName(), entity.getClass().getName()));
         } catch (IllegalAccessException exception) {
             throw new BibernateException(String.format("Error getting value of field %s of entity %s",
                     entityField.getName(), entity.getClass().getName()), exception);
@@ -182,7 +187,7 @@ public class EntityReflectionUtils {
      * Retrieves the ID value of an entity object using the field annotated with {@link Id}.
      *
      * @param entity The entity object.
-     * @param <T> The type of the entity.
+     * @param <T>    The type of the entity.
      * @return The ID value of the entity.
      */
     public static <T> Object getEntityIdValue(T entity) {
@@ -203,7 +208,7 @@ public class EntityReflectionUtils {
         } catch (Exception e) {
             throw new BibernateException(String
                     .format("Error creating instance of type %s. Each entity must have a default no-args constructor",
-                    entityType.getName()),
+                            entityType.getName()),
                     e
             );
         }
@@ -262,7 +267,7 @@ public class EntityReflectionUtils {
      * @param field The collection field whose generic type is to be determined.
      * @return The {@code Class} representing the type of entities contained in the collection.
      * @throws ClassCastException if the field's generic type is not a {@code ParameterizedType} or
-     *         if the actual type argument is not a {@code Class}.
+     *                            if the actual type argument is not a {@code Class}.
      */
     public static Class<?> getJoinCollectionEntityType(Field field) {
         ParameterizedType parameterizedType = (ParameterizedType) field.getGenericType();
@@ -276,7 +281,7 @@ public class EntityReflectionUtils {
      * Searches for a field in a given class that is of a specified type, typically used to find
      * the field that establishes a relationship between two entities.
      *
-     * @param clazz The class type to search for within the fields of {@code joinClazz}.
+     * @param clazz     The class type to search for within the fields of {@code joinClazz}.
      * @param joinClazz The class containing fields that potentially reference {@code clazz}.
      * @return The field in {@code joinClazz} that is of type {@code clazz}.
      * @throws AnnotationMappingException if no such field can be found.

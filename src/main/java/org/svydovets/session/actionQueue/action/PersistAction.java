@@ -15,7 +15,7 @@ public class PersistAction extends EntityAction {
      * Constructs a new PersistAction for the given entity with a flag indicating
      * whether to persist immediately.
      *
-     * @param entity the entity object that this action will operate on.
+     * @param entity         the entity object that this action will operate on.
      * @param instantPersist {@code true} if the entity should be persisted immediately;
      *                       {@code false} if it should be queued for later persistence.
      */
@@ -29,7 +29,7 @@ public class PersistAction extends EntityAction {
      * Determines whether this action is marked for instant persistence.
      *
      * @return {@code true} if the action should be executed immediately,
-     *         {@code false} if it should be queued for batch execution.
+     * {@code false} if it should be queued for batch execution.
      */
     public boolean isInstantPersist() {
         return instantPersist;

@@ -43,9 +43,9 @@ import java.lang.annotation.Target;
  * Order and Customer entities based on the defined database schema.</p>
  *
  * @author Your Name
- * @since 1.0
  * @see Entity
  * @see Table
+ * @since 1.0
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
