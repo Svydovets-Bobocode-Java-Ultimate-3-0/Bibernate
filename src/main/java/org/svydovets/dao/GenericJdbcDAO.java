@@ -1,6 +1,7 @@
 package org.svydovets.dao;
 
-import lombok.extern.log4j.Log4j2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.svydovets.collection.LazyList;
 import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.exception.DaoOperationException;
@@ -26,20 +27,22 @@ import java.util.function.Supplier;
  * This class abstracts the boilerplate JDBC code required to interact with the database,
  * making it easier to perform CRUD (Create, Read, Update, Delete) operations on entity classes.
  */
-@Log4j2
 public class GenericJdbcDAO {
 
+    private static final Logger log = LoggerFactory.getLogger(GenericJdbcDAO.class);
     public static final String THE_RESULT_FOR_ENTITY_CONTAINS_MORE_THAN_ONE_LINE = "The result for entity [%s] contains more than one line";
     public static final String ERROR_LOADING_ENTITIES_FROM_THE_DB = "Error loading entities from the DB: %s";
     private final ConnectionHandler connectionHandler;
+    private final boolean isShownSql;
 
     /**
      * Constructs a new GenericJdbcDAO with a specified connection handler.
      *
      * @param connectionHandler the connection handler responsible for providing database connections
      */
-    public GenericJdbcDAO(ConnectionHandler connectionHandler) {
+    public GenericJdbcDAO(ConnectionHandler connectionHandler, boolean isShownSql) {
         this.connectionHandler = connectionHandler;
+        this.isShownSql = isShownSql;
     }
 
     /**
@@ -66,7 +69,7 @@ public class GenericJdbcDAO {
      * This method automatically generates and executes a SELECT SQL statement to retrieve the entity.
      *
      * @param entityKey the key identifying the entity to load
-     * @param <T> the type parameter of the entity
+     * @param <T>       the type parameter of the entity
      * @return the loaded entity, or {@code null} if not found
      * @throws DaoOperationException if there is an error loading the entity
      */
@@ -105,7 +108,7 @@ public class GenericJdbcDAO {
      * This method automatically generates and executes a DELETE SQL statement for the specified entity.
      *
      * @param entityKey the key identifying the entity to remove
-     * @param <T> the type parameter of the entity
+     * @param <T>       the type parameter of the entity
      * @throws DaoOperationException if there is an error deleting the entity
      */
     public <T> void remove(EntityKey<T> entityKey) {
@@ -183,8 +186,8 @@ public class GenericJdbcDAO {
     /**
      * Returns a single entity by native query, base entity and values
      *
-     * @param query  - native query
-     * @param entityType  - entity class type
+     * @param query        - native query
+     * @param entityType   - entity class type
      * @param columnValues - values for query
      * @param <T>
      * @return single entity
@@ -204,8 +207,8 @@ public class GenericJdbcDAO {
     /**
      * Returns a list of entities by native query, base entity and values
      *
-     * @param query  - native query
-     * @param entityType  - entity class type
+     * @param query        - native query
+     * @param entityType   - entity class type
      * @param columnValues - values for query
      * @param <T>
      * @return list entities
@@ -241,7 +244,8 @@ public class GenericJdbcDAO {
 
     private PreparedStatement prepareInsertStatement(Object entity, Connection connection) {
         String insertQuery = SqlQueryBuilder.buildInsertQuery(entity.getClass());
-        if (log.isInfoEnabled()) {
+
+        if (isShownSql && log.isInfoEnabled()) {
             log.info(String.format("Insert: %s", insertQuery));
         }
         try {
@@ -273,7 +277,8 @@ public class GenericJdbcDAO {
             Class<?> entityType = entityEntry.entityKey().entityType();
 
             String updateQuery = SqlQueryBuilder.buildUpdateByIdQuery(entityType);
-            if (log.isInfoEnabled()) {
+
+            if (isShownSql && log.isInfoEnabled()) {
                 log.info("Update by id: {}", updateQuery);
             }
 
@@ -285,7 +290,7 @@ public class GenericJdbcDAO {
 
             for (int i = 0; i < entityFields.length; i++) {
                 entityFields[i].setAccessible(true);
-                if (EntityReflectionUtils.isVesionOptLockField(entityFields[i])){
+                if (EntityReflectionUtils.isVesionOptLockField(entityFields[i])) {
                     Object incrementedVersion = EntityReflectionUtils.incrementVersionField(entityFields[i], entity);
                     updateByIdStatement.setObject(i + 1, incrementedVersion);
                     updateByIdStatement.setObject(lastUpdatebleParam, entityFields[i].get(entity));
@@ -322,7 +327,7 @@ public class GenericJdbcDAO {
         try {
             String selectQuery = SqlQueryBuilder.buildSelectByIdQuery(entityKey.entityType());
 
-            if (log.isInfoEnabled()) {
+            if (isShownSql && log.isInfoEnabled()) {
                 log.info("Select by id: {}", selectQuery);
             }
 
@@ -391,7 +396,7 @@ public class GenericJdbcDAO {
             var fieldName = ParameterNameResolver.resolveJoinColumnOrColumnName(field);
             String selectQuery = SqlQueryBuilder.buildSelectByColumnQuery(tableName, fieldName);
 
-            if (log.isInfoEnabled()) {
+            if (isShownSql && log.isInfoEnabled()) {
                 log.info("Select by column name: {}", selectQuery);
             }
 
@@ -414,6 +419,10 @@ public class GenericJdbcDAO {
     private PreparedStatement prepareNativeQueryStatement(final Connection connection,
                                                           final String query,
                                                           final Object[] columnValues) {
+        if (isShownSql && log.isInfoEnabled()) {
+            log.info(query);
+        }
+
         try {
             PreparedStatement selectByColumnStatement = connection.prepareStatement(query);
             for (int i = 0; i < columnValues.length - 1; i++) {

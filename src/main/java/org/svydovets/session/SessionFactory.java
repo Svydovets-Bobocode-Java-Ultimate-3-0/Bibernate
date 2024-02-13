@@ -10,6 +10,7 @@ import org.svydovets.exception.InvalidParameterPropertiesException;
 import javax.sql.DataSource;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,7 +40,7 @@ public class SessionFactory {
     public SessionFactory(Properties properties) {
         DataSource dataSource = createPooledDataSource(properties);
         this.connectionHandler = new ConnectionHandler(dataSource);
-        this.jdbcDAO = new GenericJdbcDAO(connectionHandler);
+        this.jdbcDAO = new GenericJdbcDAO(connectionHandler, properties.isShownSql());
     }
 
     /**
@@ -72,8 +73,10 @@ public class SessionFactory {
             String url = requireNonNull(properties.getProperty("db.url"));
             String user = requireNonNull(properties.getProperty("db.user"));
             String password = requireNonNull(properties.getProperty("db.password"));
+            boolean isShownSql = Optional.ofNullable(properties.getProperty("db.sql-show")).isPresent() &&
+                    Boolean.parseBoolean(properties.getProperty("db.sql-show"));
 
-            return new Properties(url, user, password);
+            return new Properties(url, user, password, isShownSql);
         } catch (IOException e) {
             throw new InvalidParameterPropertiesException(e.getMessage(), e);
         }

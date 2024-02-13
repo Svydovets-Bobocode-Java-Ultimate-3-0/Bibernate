@@ -1,5 +1,7 @@
 package org.svydovets.session;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.dao.GenericJdbcDAO;
 import org.svydovets.exception.SessionOperationException;
@@ -18,9 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static org.svydovets.util.EntityReflectionUtils.getFieldValue;
-import static org.svydovets.util.EntityReflectionUtils.isColumnField;
-import static org.svydovets.util.EntityReflectionUtils.isEntityField;
+import static org.svydovets.util.EntityReflectionUtils.*;
 
 /**
  * Manages a session for interacting with the database, providing functionality
@@ -30,6 +30,7 @@ import static org.svydovets.util.EntityReflectionUtils.isEntityField;
  */
 public class Session {
 
+    private static final Logger log = LoggerFactory.getLogger(Session.class);
     private final GenericJdbcDAO jdbcDAO;
     private final ActionQueue actionQueue;
     private final Map<EntityKey<?>, Object> entitiesCache;
@@ -42,7 +43,7 @@ public class Session {
     /**
      * Constructs a new session with the specified JDBC DAO and connection handler.
      *
-     * @param jdbcDAO The DAO for database operations.
+     * @param jdbcDAO           The DAO for database operations.
      * @param connectionHandler The handler for managing database connections.
      */
     public Session(GenericJdbcDAO jdbcDAO, ConnectionHandler connectionHandler) {
@@ -52,6 +53,10 @@ public class Session {
         this.entitiesCache = new HashMap<>();
         this.entitiesSnapshots = new HashMap<>();
         this.closed = false;
+
+        if (log.isInfoEnabled()) {
+            log.info("Session was created");
+        }
     }
 
     /**
@@ -81,8 +86,8 @@ public class Session {
      * Retrieves an entity by its class type and identifier from the cache or database.
      *
      * @param entityType The class of the entity to retrieve.
-     * @param id The identifier of the entity.
-     * @param <T> The type of the entity.
+     * @param id         The identifier of the entity.
+     * @param <T>        The type of the entity.
      * @return The found entity or null if not found.
      */
     public <T> T findById(Class<T> entityType, Object id) {
@@ -97,10 +102,10 @@ public class Session {
     /**
      * Retrieves an entity by its class type and identifier from the cache or database.
      *
-     * @param entityType The class of the entity to retrieve.
-     * @param field The entity field.
+     * @param entityType  The class of the entity to retrieve.
+     * @param field       The entity field.
      * @param columnValue The entity field value.
-     * @param <T> The type of the entity.
+     * @param <T>         The type of the entity.
      * @return The found entity or null if not found.
      */
     public <T> T findBy(final Class<T> entityType, final Field field, final Object columnValue) {
@@ -115,10 +120,10 @@ public class Session {
     /**
      * Retrieves list entities by its class type and identifier from the cache or database.
      *
-     * @param entityType The class of the entity to retrieve.
-     * @param field The entity field.
+     * @param entityType  The class of the entity to retrieve.
+     * @param field       The entity field.
      * @param columnValue The entity field value.
-     * @param <T> The type of the entity.
+     * @param <T>         The type of the entity.
      * @return The found list entities or null if not found.
      */
     public <T> List<T> findAllBy(final Class<T> entityType, final Field field, final Object columnValue) {
@@ -131,10 +136,10 @@ public class Session {
     /**
      * Retrieves an entity by its class type and identifier from the cache or database.
      *
-     * @param entityType The class of the entity to retrieve.
-     * @param query The native query.
+     * @param entityType   The class of the entity to retrieve.
+     * @param query        The native query.
      * @param columnValues The array of entity field values.
-     * @param <T> The type of the entity.
+     * @param <T>          The type of the entity.
      * @return The found entity or null if not found.
      */
     public <T> T nativeQueryBy(final String query, final Class<T> entityType, final Object[] columnValues) {
@@ -147,10 +152,10 @@ public class Session {
     /**
      * Retrieves list entities by its class type and identifier from the cache or database.
      *
-     * @param entityType The class of the entity to retrieve.
-     * @param query The native query.
+     * @param entityType   The class of the entity to retrieve.
+     * @param query        The native query.
      * @param columnValues The array of entity field values.
-     * @param <T> The type of the entity.
+     * @param <T>          The type of the entity.
      * @return The found list entities or null if not found.
      */
     public <T> List<T> nativeQueryAllBy(final String query, final Class<T> entityType, final Object[] columnValues) {
@@ -164,7 +169,7 @@ public class Session {
      * Merges the state of the given entity with the one in the database.
      *
      * @param entity The entity to merge.
-     * @param <T> The type of the entity.
+     * @param <T>    The type of the entity.
      * @return The merged entity.
      */
     public <T> T merge(T entity) {
@@ -216,6 +221,10 @@ public class Session {
         entitiesSnapshots.clear();
 
         closed = true;
+
+        if (log.isInfoEnabled()) {
+            log.info("Session was closed");
+        }
     }
 
     /**

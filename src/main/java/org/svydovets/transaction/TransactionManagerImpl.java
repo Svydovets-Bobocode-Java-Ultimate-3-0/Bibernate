@@ -1,5 +1,7 @@
 package org.svydovets.transaction;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.session.actionQueue.executor.ActionQueue;
 
@@ -12,6 +14,7 @@ import java.sql.SQLException;
  */
 public class TransactionManagerImpl implements TransactionManager {
 
+    private static final Logger log = LoggerFactory.getLogger(TransactionManagerImpl.class);
     private boolean isActive;
     private final ConnectionHandler connectionHandler;
     private final ActionQueue actionQueue;
@@ -34,6 +37,10 @@ public class TransactionManagerImpl implements TransactionManager {
     public void begin() {
         if (isActive) {
             throw new TransactionException("Transaction was started");
+        }
+
+        if (log.isInfoEnabled()) {
+            log.info("Transaction was started");
         }
 
         try {
@@ -61,6 +68,10 @@ public class TransactionManagerImpl implements TransactionManager {
             connectionHandler.closeConnectionByThreadName();
             isActive = false;
             connectionHandler.getConnectionAttributes().setTransactionActivated(false);
+
+            if (log.isInfoEnabled()) {
+                log.info("Transaction was commit");
+            }
         } catch (SQLException e) {
             throw new TransactionException(e.getMessage(), e);
         }
@@ -80,6 +91,10 @@ public class TransactionManagerImpl implements TransactionManager {
             connectionHandler.getConnection().rollback();
             isActive = false;
             connectionHandler.getConnectionAttributes().setTransactionActivated(false);
+
+            if (log.isInfoEnabled()) {
+                log.info("Transaction was rollback");
+            }
         } catch (SQLException e) {
             throw new TransactionException(e.getMessage(), e);
         }
