@@ -48,33 +48,9 @@ public class SqlQueryBuilderTest {
     }
 
     @Test
-    public void shouldReturnUpdateByIdQueryWithPessimistickLockForWrite() {
-        String updateByIdQuery = "update persons set age = ?, first_name = ?, last_name = ?, male = ? where id = ? for share";
-        assertThat(updateByIdQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(PersonWithValidAnnotations.class, PessimisticLockStrategy.ENABLE_PESSIMISTIC_WRITE));
-    }
-
-    @Test
-    public void shouldReturnUpdateByIdQueryWithPessimistickLockForRead() {
-        String updateByIdQuery = "update persons set age = ?, first_name = ?, last_name = ?, male = ? where id = ? for update";
-        assertThat(updateByIdQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(PersonWithValidAnnotations.class, PessimisticLockStrategy.ENABLE_PESSIMISTIC_READ));
-    }
-
-    @Test
     public void shouldReturnUpdateByIdQueryWitVersionOptLock() {
         String updateByVersionQuery = "update persons set age = ?, first_name = ?, last_name = ?, male = ?, version = ? where id = ? and version = ?";
         assertThat(updateByVersionQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(PersonWithVersionAnnotation.class));
-    }
-
-    @Test
-    public void shouldReturnUpdateByIdQueryWitVersionOptLockWithPessimistickLockForWrite() {
-        String updateByVersionQuery = "update persons set age = ?, first_name = ?, last_name = ?, male = ?, version = ? where id = ? and version = ? for share";
-        assertThat(updateByVersionQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(PersonWithVersionAnnotation.class, PessimisticLockStrategy.ENABLE_PESSIMISTIC_WRITE));
-    }
-
-    @Test
-    public void shouldReturnUpdateByIdQueryWitVersionOptLockWithPessimistickLockForRead() {
-        String updateByVersionQuery = "update persons set age = ?, first_name = ?, last_name = ?, male = ?, version = ? where id = ? and version = ? for update";
-        assertThat(updateByVersionQuery).isEqualTo(SqlQueryBuilder.buildUpdateByIdQuery(PersonWithVersionAnnotation.class, PessimisticLockStrategy.ENABLE_PESSIMISTIC_READ));
     }
 
     @Test

@@ -74,22 +74,16 @@ public class SqlQueryBuilder {
      * @param entityType - entity class with annotation @Id
      */
     public static String buildUpdateByIdQuery(Class<?> entityType) {
-        return buildUpdateByIdQuery(entityType, PessimisticLockStrategy.DISABLED);
-    }
-
-    public static String buildUpdateByIdQuery(Class<?> entityType, PessimisticLockStrategy lock) {
-        log.trace("Call buildUpdateByIdQuery({}) for  entity class and PessimisticLock ({})", entityType, lock);
+        log.trace("Call buildUpdateByIdQuery({}) for  entity class", entityType);
 
         String tableName = ParameterNameResolver.resolveTableName(entityType);
         String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
         String updatableColumns = SqlQueryUtil.resolveUpdatableColumnsWithValues(entityType);
         String versionOptLockColumnName = ParameterNameResolver.getVersionFieldName(entityType);
         if (versionOptLockColumnName != null && !versionOptLockColumnName.isBlank()){
-            String sql = String.format(UPDATE_BY_ID_SQL + UPDATE_OPT_LOCK_VERSION_POSTFIX, tableName, updatableColumns, idColumnName, versionOptLockColumnName);
-            return SqlQueryUtil.pessimisticLockBuildPostfixQuery(sql, lock);
+            return String.format(UPDATE_BY_ID_SQL + UPDATE_OPT_LOCK_VERSION_POSTFIX, tableName, updatableColumns, idColumnName, versionOptLockColumnName);
         } else {
-            String sql = String.format(UPDATE_BY_ID_SQL, tableName, updatableColumns, idColumnName);
-            return SqlQueryUtil.pessimisticLockBuildPostfixQuery(sql, lock);
+            return String.format(UPDATE_BY_ID_SQL, tableName, updatableColumns, idColumnName);
         }
     }
 
