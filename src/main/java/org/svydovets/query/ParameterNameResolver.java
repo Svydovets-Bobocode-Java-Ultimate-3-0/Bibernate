@@ -11,6 +11,9 @@ import org.svydovets.exception.AnnotationMappingException;
 import org.svydovets.util.EntityReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Class helper for resolving names of table and column
@@ -135,5 +138,36 @@ public class ParameterNameResolver {
         log.trace("Call isEntity({}) for  entity class", entityType);
 
         return entityType.isAnnotationPresent(Entity.class);
+    }
+
+
+    /**
+     * This method returns a map with dependencies of the field name and column name for simple column
+     *
+     * @param entityType
+     * @return map there key - field name, value - column name
+     */
+    public static Map<String, String> getColumnNameByFieldNameForColumnFielsMap(Class<?> entityType) {
+        return Arrays.stream(entityType.getDeclaredFields())
+                .filter(EntityReflectionUtils::isColumnField)
+                .collect(Collectors.toMap(Field::getName, ParameterNameResolver::resolveColumnName));
+    }
+
+    /**
+     * This method returns a map with dependencies of the field name and column name for entity column
+     *
+     * @param entityType
+     * @return map there key - field name, value - column name
+     */
+    public static Map<String, String> getColumnNameByFieldNameForEntityFielsMap(Class<?> entityType) {
+        return Arrays.stream(entityType.getDeclaredFields())
+                .filter(EntityReflectionUtils::isEntityField)
+                .collect(Collectors.toMap(ParameterNameResolver::getEntityFieldNativeName,
+                        ParameterNameResolver::resolveJoinColumnName));
+    }
+
+    private static String getEntityFieldNativeName(final Field field) {
+        String idFieldName = ParameterNameResolver.getIdFieldName(field.getType());
+        return field.getName() + "." + idFieldName;
     }
 }

@@ -250,6 +250,18 @@ public class EntityReflectionUtils {
     }
 
     /**
+     * Returns all fields that represent an entity relationship (ManyToOne or OneToOne with JoinColumn).
+     *
+     * @param entityType The class of the entity.
+     * @return List fields represents an entity relationship.
+     */
+    public static List<Field> getEntityFields(Class<?> entityType) {
+        return Arrays.stream(entityType.getDeclaredFields())
+                .filter(EntityReflectionUtils::isEntityField)
+                .toList();
+    }
+
+    /**
      * Determines whether a field represents a collection of entities in a relationship (OneToMany).
      *
      * @param field The field to check.

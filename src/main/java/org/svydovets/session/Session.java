@@ -5,6 +5,7 @@ import org.slf4j.LoggerFactory;
 import org.svydovets.connectionPool.datasource.ConnectionHandler;
 import org.svydovets.dao.GenericJdbcDAO;
 import org.svydovets.exception.SessionOperationException;
+import org.svydovets.queryLanguage.QueryManager;
 import org.svydovets.session.actionQueue.action.MergeAction;
 import org.svydovets.session.actionQueue.action.PersistAction;
 import org.svydovets.session.actionQueue.action.RemoveAction;
@@ -134,7 +135,7 @@ public class Session {
     }
 
     /**
-     * Retrieves an entity by its class type and identifier from the cache or database.
+     * Retrieves an entity by its class type and identifier from the cache or database by native query.
      *
      * @param entityType   The class of the entity to retrieve.
      * @param query        The native query.
@@ -150,7 +151,7 @@ public class Session {
     }
 
     /**
-     * Retrieves list entities by its class type and identifier from the cache or database.
+     * Retrieves list entities by its class type and identifier from the cache or database by native query.
      *
      * @param entityType   The class of the entity to retrieve.
      * @param query        The native query.
@@ -161,6 +162,41 @@ public class Session {
     public <T> List<T> nativeQueryAllBy(final String query, final Class<T> entityType, final Object[] columnValues) {
         checkIfOpenSession();
         List<T> entities = jdbcDAO.nativeQueryAllBy(query, entityType, columnValues);
+
+        return entities.stream().map(ent -> entityType.cast(computeIfAbsent(ent))).collect(Collectors.toList());
+    }
+
+    /**
+     * Retrieves an entity by its class type and identifier from the cache or database by jql.
+     *
+     * @param queryManager The Query Manager.
+     * @param <T> The type of the entity.
+     * @return The found entity or null if not found.
+     * @see QueryManager
+     */
+    public <T> T jqlQueryBy(QueryManager<T> queryManager) {
+        checkIfOpenSession();
+
+        Class<T> entityType = queryManager.getEntityType();
+        T entity = jdbcDAO.nativeQueryBy(queryManager.toSqlString(), entityType, queryManager.getParameters());
+
+        return entityType.cast(computeIfAbsent(entity));
+    }
+
+    /**
+     * Retrieves list entities by its class type and identifier from the cache or database by native query.
+     *
+     * @param queryManager The Query Manager.
+     * @param <T> The type of the entity.
+     * @return The found list entities or null if not found.
+     * @see QueryManager
+     */
+    public <T> List<T> jqlQueryAllBy(QueryManager<T> queryManager) {
+        checkIfOpenSession();
+
+        Class<T> entityType = queryManager.getEntityType();
+        List<T> entities = jdbcDAO
+                .nativeQueryAllBy(queryManager.toSqlString(), entityType, queryManager.getParameters());
 
         return entities.stream().map(ent -> entityType.cast(computeIfAbsent(ent))).collect(Collectors.toList());
     }

@@ -27,6 +27,7 @@ import org.svydovets.exception.AnnotationMappingException;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
@@ -264,6 +265,12 @@ public class EntityReflectionUtilsTest {
         assertThat(version + 1).isEqualTo(EntityReflectionUtils.incrementVersionField(versionField, personWithVersion)) ;
     }
 
-
-
+    @Test
+    public void shouldReturnListFieldsIfRelationshipIsEntityField() {
+        var entityFields = Arrays.stream(Note.class.getDeclaredFields())
+                .filter(EntityReflectionUtils::isEntityField)
+                .toList();
+        assertThat(1).isEqualTo(entityFields.size());
+        assertThat(Person.class).isEqualTo(entityFields.get(0).getType());
+    }
 }
