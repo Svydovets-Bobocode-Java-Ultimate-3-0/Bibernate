@@ -1,6 +1,7 @@
 package org.svydovets.collection;
 
-import lombok.extern.log4j.Log4j2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Comparator;
@@ -22,8 +23,9 @@ import java.util.stream.Stream;
  *
  * @param <T> the type of elements in this list
  */
-@Log4j2
 public class LazyList<T> implements List<T> {
+
+    private static final Logger log = LoggerFactory.getLogger(LazyList.class);
 
     /**
      * The supplier function that provides the list contents when required.

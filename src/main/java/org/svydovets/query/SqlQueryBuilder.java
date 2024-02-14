@@ -1,6 +1,7 @@
 package org.svydovets.query;
 
-import lombok.extern.log4j.Log4j2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.svydovets.util.SqlQueryUtil;
 
 /**
@@ -9,8 +10,9 @@ import org.svydovets.util.SqlQueryUtil;
  *
  * @author Renat Safarov, Alexandr Navozenko
  */
-@Log4j2
 public class SqlQueryBuilder {
+
+    private static final Logger log = LoggerFactory.getLogger(SqlQueryBuilder.class);
     private static final String SELECT_BY_ID_SQL = "select * from %s where %s = ?";
 
     private static final String INSERT_SQL = "insert into %s (%s) values (%s)";
@@ -51,7 +53,7 @@ public class SqlQueryBuilder {
     /**
      * This method helps to build a SELECT QUERY based on the column name.
      *
-     * @param tableName - entity table name
+     * @param tableName  - entity table name
      * @param columnName - entity column name
      * @return prepared select query
      */
@@ -73,7 +75,7 @@ public class SqlQueryBuilder {
         String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
         String updatableColumns = SqlQueryUtil.resolveUpdatableColumnsWithValues(entityType);
         String versionOptLockColumnName = ParameterNameResolver.getVersionFieldName(entityType);
-        if (versionOptLockColumnName != null && !versionOptLockColumnName.isBlank()){
+        if (versionOptLockColumnName != null && !versionOptLockColumnName.isBlank()) {
             return String.format(UPDATE_BY_ID_SQL + UPDATE_OPT_LOCK_VERSION_POSTFIX, tableName, updatableColumns, idColumnName, versionOptLockColumnName);
         } else {
             return String.format(UPDATE_BY_ID_SQL, tableName, updatableColumns, idColumnName);

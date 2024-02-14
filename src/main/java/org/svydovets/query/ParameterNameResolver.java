@@ -1,6 +1,7 @@
 package org.svydovets.query;
 
-import lombok.extern.log4j.Log4j2;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.svydovets.annotation.Column;
 import org.svydovets.annotation.Entity;
 import org.svydovets.annotation.Id;
@@ -18,8 +19,9 @@ import java.lang.reflect.Field;
  *
  * @author Renat Safarov, Alexandr Navozenko
  */
-@Log4j2
 public class ParameterNameResolver {
+
+    private static final Logger log = LoggerFactory.getLogger(ParameterNameResolver.class);
 
     /**
      * This method helps to define name of declared <strong>entity class</strong> by name from annotation
@@ -115,7 +117,7 @@ public class ParameterNameResolver {
         log.trace("Call getVersionFieldName({}) for  entity class", entityType);
 
         Field versionField = EntityReflectionUtils.getVersionField(entityType);
-        if (versionField == null){
+        if (versionField == null) {
             return "";
         } else {
             return resolveColumnName(versionField);

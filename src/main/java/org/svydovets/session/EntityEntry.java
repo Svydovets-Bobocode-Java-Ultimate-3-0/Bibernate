@@ -8,7 +8,7 @@ import org.svydovets.util.EntityReflectionUtils;
  * lifecycle and state changes of entities during persistence operations.
  *
  * @param entityKey The key of the entity, encapsulating its type and identifier.
- * @param entity The actual entity instance.
+ * @param entity    The actual entity instance.
  */
 public record EntityEntry(EntityKey<?> entityKey, Object entity) {
     /**
@@ -16,7 +16,7 @@ public record EntityEntry(EntityKey<?> entityKey, Object entity) {
      * This static factory method provides a convenient way to create {@code EntityEntry} instances.
      *
      * @param entityKey The key of the entity.
-     * @param entity The entity instance.
+     * @param entity    The entity instance.
      * @return A new {@code EntityEntry} instance encapsulating the entity and its key.
      */
     public static EntityEntry valueOf(EntityKey<?> entityKey, Object entity) {
@@ -31,7 +31,7 @@ public record EntityEntry(EntityKey<?> entityKey, Object entity) {
      *
      * @param entity The entity instance from which to create an {@code EntityEntry}.
      * @return An {@code EntityEntry} representing the provided entity, with its key
-     *         constructed based on the entity's identifier.
+     * constructed based on the entity's identifier.
      */
     public static EntityEntry valueOf(Object entity) {
         Object entityId = EntityReflectionUtils.getEntityIdValue(entity);

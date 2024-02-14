@@ -51,7 +51,7 @@ public class PooledDataSource extends DriverDataSource {
     /**
      * Constructs a PooledDataSource with the specified maximum pool size.
      *
-     * @param config The {@code DataSourceConfig} containing the database connection details.
+     * @param config      The {@code DataSourceConfig} containing the database connection details.
      * @param maxPoolSize The maximum number of connections in the pool.
      * @throws IllegalArgumentException if {@code maxPoolSize} is less than or equal to 0.
      */

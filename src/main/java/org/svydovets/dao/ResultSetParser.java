@@ -13,7 +13,6 @@ public class ResultSetParser {
     public static final String ERROR_PARSING_RESULT_SET_FOR_ENTITY = "Error parsing result set for entity of type: %s";
 
     /**
-     *
      * @param entity
      * @param resultSet
      */

@@ -36,7 +36,6 @@ import java.lang.annotation.Target;
  * <p>Using the {@code Column} annotation helps in making the database schema
  * configuration clear and concise directly within the Java class definitions,
  * improving the readability and maintainability of the ORM mapping configuration.</p>
- *
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.FIELD)
