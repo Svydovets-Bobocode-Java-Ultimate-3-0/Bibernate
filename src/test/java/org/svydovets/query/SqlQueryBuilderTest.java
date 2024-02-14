@@ -24,6 +24,17 @@ public class SqlQueryBuilderTest {
     }
 
     @Test
+    public void shouldReturnSelectByIdQueryWithPessimistickLockForWrite() {
+        String selectByIdQuery = "select * from persons where id = ? for share";
+        assertThat(selectByIdQuery).isEqualTo(SqlQueryBuilder.buildSelectByIdQuery(PersonWithValidAnnotations.class, PessimisticLockStrategy.ENABLE_PESSIMISTIC_WRITE));
+    }
+    @Test
+    public void shouldReturnSelectByIdQueryWithPessimistickLockForRead() {
+        String selectByIdQuery = "select * from persons where id = ? for update";
+        assertThat(selectByIdQuery).isEqualTo(SqlQueryBuilder.buildSelectByIdQuery(PersonWithValidAnnotations.class, PessimisticLockStrategy.ENABLE_PESSIMISTIC_READ));
+    }
+
+    @Test
     public void shouldReturnSelectByColumnQuery() {
         String selectByIdQuery = "select * from persons where last_name = ?";
         var tableName = ParameterNameResolver.resolveTableName(PersonWithValidAnnotations.class);

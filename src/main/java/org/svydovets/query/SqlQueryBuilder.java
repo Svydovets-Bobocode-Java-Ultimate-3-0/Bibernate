@@ -42,12 +42,15 @@ public class SqlQueryBuilder {
      * @param entityType - entity class with annotation @Id
      */
     public static String buildSelectByIdQuery(Class<?> entityType) {
-        log.trace("Call buildSelectByIdQuery({}) for class base entity", entityType);
+        return buildSelectByIdQuery(entityType, PessimisticLockStrategy.DISABLED);
+    }
+    public static String buildSelectByIdQuery(Class<?> entityType, PessimisticLockStrategy lock) {
+        log.trace("Call buildSelectByIdQuery({}) for class base entity with PessimisticLock is ({})", entityType, lock);
 
         String tableName = ParameterNameResolver.resolveTableName(entityType);
         String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
 
-        return buildSelectByColumnQuery(tableName, idColumnName);
+        return buildSelectByColumnQuery(tableName, idColumnName, lock);
     }
 
     /**
@@ -58,9 +61,13 @@ public class SqlQueryBuilder {
      * @return prepared select query
      */
     public static String buildSelectByColumnQuery(final String tableName, final String columnName) {
-        log.trace("Call buildSelectByColumnQuery({}, {}) for class base entity", tableName, columnName);
+        return buildSelectByColumnQuery(tableName, columnName, PessimisticLockStrategy.DISABLED);
+    }
 
-        return String.format(SELECT_BY_ID_SQL, tableName, columnName);
+    public static String buildSelectByColumnQuery(final String tableName, final String columnName, PessimisticLockStrategy lock) {
+        log.trace("Call buildSelectByColumnQuery({}, {}) for class base entity ({}) and PessimisticLock ({})", tableName, columnName, lock);
+        String sql = String.format(SELECT_BY_ID_SQL, tableName, columnName);
+        return SqlQueryUtil.pessimisticLockBuildPostfixQuery(sql, lock);
     }
 
     /**
