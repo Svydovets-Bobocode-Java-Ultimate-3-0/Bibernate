@@ -1,55 +1,105 @@
 package org.svydovets.query;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.svydovets.util.SqlQueryUtil;
 
-import org.svydovets.annotation.Id;
-
-import java.lang.reflect.Field;
-import java.util.Arrays;
-
+/**
+ * Class helper for build query
+ * It gets values from annotations, converts them into table or column names, and prepares a query on the values.
+ *
+ * @author Renat Safarov, Alexandr Navozenko
+ */
 public class SqlQueryBuilder {
+
+    private static final Logger log = LoggerFactory.getLogger(SqlQueryBuilder.class);
     private static final String SELECT_BY_ID_SQL = "select * from %s where %s = ?";
+
+    private static final String INSERT_SQL = "insert into %s (%s) values (%s)";
+
     private static final String UPDATE_BY_ID_SQL = "update %s set %s where %s = ?";
 
-    public static String buildSelectByIdQuery(Class<?> clazz) {
-        String tableName = ParameterNameResolver.resolveTableName(clazz);
+    private static final String UPDATE_OPT_LOCK_VERSION_POSTFIX = " and %s = ?";
 
-        Field idField = getIdField(clazz);
-        String idColumnName = ParameterNameResolver.resolveColumnName(idField);
+    private static final String DELETE_BY_ID_SQL = "delete from %s where %s = ?";
 
-        return String.format(SELECT_BY_ID_SQL, tableName, idColumnName);
+    /**
+     * This method helps to build a INSERT QUERY based on the primary key.
+     *
+     * @param entityType - entity type
+     */
+    public static String buildInsertQuery(Class<?> entityType) {
+        String tableName = ParameterNameResolver.resolveTableName(entityType);
+        String columnNames = SqlQueryUtil.resolveColumnNamesForInsert(entityType);
+        String columnValues = SqlQueryUtil.resolveColumnValuesForInsert(entityType);
+
+        return String.format(INSERT_SQL, tableName, columnNames, columnValues);
     }
 
+    /**
+     * This method helps to build a SELECT QUERY based on the primary key.
+     *
+     * @param entityType - entity class with annotation @Id
+     */
+    public static String buildSelectByIdQuery(Class<?> entityType) {
+        return buildSelectByIdQuery(entityType, PessimisticLockStrategy.DISABLED);
+    }
+    public static String buildSelectByIdQuery(Class<?> entityType, PessimisticLockStrategy lock) {
+        log.trace("Call buildSelectByIdQuery({}) for class base entity with PessimisticLock is ({})", entityType, lock);
 
-    public static String buildUpdateByIdQuery(Class<?> clazz) {
-        String tableName = ParameterNameResolver.resolveTableName(clazz);
+        String tableName = ParameterNameResolver.resolveTableName(entityType);
+        String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
 
-        Field idField = getIdField(clazz);
-        String idColumnName = ParameterNameResolver.resolveColumnName(idField);
-
-        String columnsForUpdate = resolveColumnsForUpdate(clazz, idColumnName);
-
-        return String.format(UPDATE_BY_ID_SQL, tableName, columnsForUpdate, idColumnName);
+        return buildSelectByColumnQuery(tableName, idColumnName, lock);
     }
 
-    private static String resolveColumnsForUpdate(Class<?> clazz, String idColumnName) {
-        StringBuilder stringBuilder = new StringBuilder();
-        Field[] fields = clazz.getDeclaredFields();
-        for (int i = 0; i < fields.length; i++) {
-            String columnName = ParameterNameResolver.resolveColumnName(fields[i]);
-            if (!columnName.equals(idColumnName)) {
-                stringBuilder.append(columnName).append("=").append("?");
-                if (i < fields.length - 1) {
-                    stringBuilder.append(", ");
-                }
-            }
+    /**
+     * This method helps to build a SELECT QUERY based on the column name.
+     *
+     * @param tableName  - entity table name
+     * @param columnName - entity column name
+     * @return prepared select query
+     */
+    public static String buildSelectByColumnQuery(final String tableName, final String columnName) {
+        return buildSelectByColumnQuery(tableName, columnName, PessimisticLockStrategy.DISABLED);
+    }
+
+    public static String buildSelectByColumnQuery(final String tableName, final String columnName, PessimisticLockStrategy lock) {
+        log.trace("Call buildSelectByColumnQuery({}, {}) for class base entity ({}) and PessimisticLock ({})", tableName, columnName, lock);
+        String sql = String.format(SELECT_BY_ID_SQL, tableName, columnName);
+        return SqlQueryUtil.pessimisticLockBuildPostfixQuery(sql, lock);
+    }
+
+    /**
+     * This method helps to build a UPDATE QUERY based on the primary key.
+     *
+     * @param entityType - entity class with annotation @Id
+     */
+    public static String buildUpdateByIdQuery(Class<?> entityType) {
+        log.trace("Call buildUpdateByIdQuery({}) for  entity class", entityType);
+
+        String tableName = ParameterNameResolver.resolveTableName(entityType);
+        String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
+        String updatableColumns = SqlQueryUtil.resolveUpdatableColumnsWithValues(entityType);
+        String versionOptLockColumnName = ParameterNameResolver.getVersionFieldName(entityType);
+        if (versionOptLockColumnName != null && !versionOptLockColumnName.isBlank()) {
+            return String.format(UPDATE_BY_ID_SQL + UPDATE_OPT_LOCK_VERSION_POSTFIX, tableName, updatableColumns, idColumnName, versionOptLockColumnName);
+        } else {
+            return String.format(UPDATE_BY_ID_SQL, tableName, updatableColumns, idColumnName);
         }
-        return stringBuilder.toString();
     }
 
-    private static Field getIdField(Class<?> clazz) {
-        return Arrays.stream(clazz.getDeclaredFields())
-                .filter(field -> field.isAnnotationPresent(Id.class))
-                .findAny()
-                .orElseThrow();
+    /**
+     * This method helps to build a DELETE QUERY based on the primary key.
+     *
+     * @param entityType - entity class with annotation @Id
+     */
+    public static String buildDeleteByIdQuery(Class<?> entityType) {
+        log.trace("Call buildDeleteByIdQuery({}) for  entity class", entityType);
+
+        String tableName = ParameterNameResolver.resolveTableName(entityType);
+        String idColumnName = ParameterNameResolver.getIdFieldName(entityType);
+
+        return String.format(DELETE_BY_ID_SQL, tableName, idColumnName);
     }
 }
