@@ -521,10 +521,25 @@ To configure database need to add the `application.properties` file with the fol
 
    ```properties
       db.url=url_cred
-db.user=user_cred
-db.password=password_cred
+      db.user=user_cred
+      db.password=password_cred
+      db.sql-show=true|false
    ```
 
 `URL` - responsible for the database url
 `user` - a user for your database
-`password` - needed password to connect to database 
+`password` - needed password to connect to database
+`sql-show` - allow users to see sql queries in the console.
+
+If you have the error in your project like this:
+`java.lang.NoClassDefFoundError: org.slf4j.LoggerFactory`
+
+Please, add the dependency:
+
+```xml
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+            <version>2.0.12</version>
+        </dependency>
+```
