@@ -91,7 +91,7 @@ public class TransactionManagerImpl implements TransactionManager {
             connectionHandler.getConnection().rollback();
             isActive = false;
             connectionHandler.getConnectionAttributes().setTransactionActivated(false);
-
+            connectionHandler.closeConnectionByThreadName();
             if (log.isInfoEnabled()) {
                 log.info("Transaction was rollback");
             }
