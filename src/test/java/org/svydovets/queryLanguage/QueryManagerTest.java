@@ -195,6 +195,19 @@ public class QueryManagerTest {
     }
 
     @Test
+    public void shouldReturnSelectNativeQueryWithLeftJoinByColumnsWithoutAlias() {
+        final String jpQuery = "select * from Note where Person.id = :personId";
+        QueryManager<Note> queryManager = QueryManager.of(jpQuery, Note.class);
+        queryManager.setParameters("personId", 1L);
+
+        final String expectedQuery = "select * from notes "
+                + "left join persons join_0 on join_0.id = person_id "
+                + "where person_id = ?";
+        String sqlString = queryManager.toSqlString();
+        assertThat(expectedQuery).isEqualToIgnoringCase(sqlString);
+    }
+
+    @Test
     public void shouldReturnEntityTypeFromQueryManager() {
         QueryManager<Note> queryManager = new QueryManager<>(Note.class);
         assertThat(Note.class).isEqualTo(queryManager.getEntityType());

@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
  * </pre></blockquote>
  *
  *
+ *
  * <p>Example #2
  * <blockquote><pre>
  * final String jpQuery = "select n from Note n where n.Person.id = :personId";
@@ -249,7 +250,7 @@ public class QueryManager<T> {
                 String joinQueryStr;
                 if (arrQuery.get(index).equalsIgnoreCase("WHERE")) {
                     joinQueryStr = String.format(LEFT_JOIN, joinEntity, joinIndex,
-                            currentEntityId, joinIndex + "." + joinEntityColumnName);
+                            joinIndex + "." + currentEntityId, joinEntityColumnName);
                 } else {
                     joinQueryStr = String.format(LEFT_JOIN, joinEntity, joinIndex,
                              joinIndex + "." + currentEntityId, arrQuery.get(index) + "." + joinEntityColumnName);
